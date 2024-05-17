@@ -18,8 +18,39 @@ const (
 )
 
 var metricsMap = map[string][]string{
-	"gauge":   {"goga", "gosha", "grisha"},
-	"counter": {"coco", "chloe", "celine"},
+	"gauge": {
+		"Alloc",
+		"BuckHashSys",
+		"Frees",
+		"GCCPUFraction",
+		"GCSys",
+		"HeapAlloc",
+		"HeapIdle",
+		"HeapInuse",
+		"HeapObjects",
+		"HeapReleased",
+		"HeapSys",
+		"LastGC",
+		"Lookups",
+		"MCacheInuse",
+		"MCacheSys",
+		"MSpanInuse",
+		"MSpanSys",
+		"Mallocs",
+		"NextGC",
+		"NumForcedGC",
+		"NumGC",
+		"OtherSys",
+		"PauseTotalNs",
+		"StackInuse",
+		"StackSys",
+		"Sys",
+		"TotalAlloc",
+		"RandomValue",
+	},
+	"counter": {
+		"PollCount",
+	},
 }
 
 // checking URL path for correctness of the conditions for getting the metric value.
@@ -39,9 +70,8 @@ func metricCtx(next http.Handler) http.Handler {
 }
 
 func (h *HTTPServer) getValue(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	metricType := ctx.Value("type").(string)
-	metricName := ctx.Value("name").(string)
+	metricType := r.Context().Value("type").(string)
+	metricName := r.Context().Value("name").(string)
 	var value string
 
 	if metricType == "gauge" {
@@ -88,10 +118,9 @@ func updateCtx(next http.Handler) http.Handler {
 }
 
 func (h *HTTPServer) putValue(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	metricType := ctx.Value("type").(string)
-	metricName := ctx.Value("name").(string)
-	metricValue := ctx.Value("value").(string)
+	metricType := r.Context().Value("type").(string)
+	metricName := r.Context().Value("name").(string)
+	metricValue := r.Context().Value("value").(string)
 
 	if metricType == "gauge" {
 		value, _ := strconv.ParseFloat(metricValue, 64)
