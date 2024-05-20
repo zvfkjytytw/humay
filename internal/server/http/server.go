@@ -7,9 +7,14 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-
-	metricsStorage "github.com/zvfkjytytw/humay/internal/server/storage"
 )
+
+type MemStorage interface {
+	GetGaugeMetric(name string) (float64, error)
+	PutGaugeMetric(name string, value float64)
+	GetCounterMetric(name string) (int64, error)
+	PutCounterMetric(name string, value int64)
+}
 
 type HTTPConfig struct {
 	Host         string `yaml:"host"`
@@ -22,13 +27,13 @@ type HTTPConfig struct {
 type HTTPServer struct {
 	server  *http.Server
 	logger  *zap.Logger
-	storage *metricsStorage.MemStorage
+	storage MemStorage
 }
 
 func NewHTTPServer(
 	config *HTTPConfig,
 	logger *zap.Logger,
-	storage *metricsStorage.MemStorage,
+	storage MemStorage,
 ) *HTTPServer {
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", config.Host, config.Port),
