@@ -56,23 +56,37 @@ func TestPutValue(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		mType string
-		mName string
+		name   string
+		mType  string
+		mName  string
 		mValue string
 		stCode int
 	}{
 		{
-			name: "correct gauge metric",
-			mType: "gauge",
-			mName: "pass",
+			name:   "correct gauge metric",
+			mType:  "gauge",
+			mName:  "pass",
 			mValue: "0",
 			stCode: http.StatusOK,
 		},
 		{
-			name: "incorrect gauge metric",
-			mType: "gauge",
-			mName: "fail",
+			name:   "incorrect gauge metric",
+			mType:  "gauge",
+			mName:  "fail",
+			mValue: "0",
+			stCode: http.StatusInternalServerError,
+		},
+		{
+			name:   "correct counter metric",
+			mType:  "counter",
+			mName:  "pass",
+			mValue: "0",
+			stCode: http.StatusOK,
+		},
+		{
+			name:   "incorrect counter metric",
+			mType:  "counter",
+			mName:  "fail",
 			mValue: "0",
 			stCode: http.StatusInternalServerError,
 		},
@@ -87,6 +101,57 @@ func TestPutValue(t *testing.T) {
 			req = req.WithContext(ctx)
 			rw := httptest.NewRecorder()
 			server.putValue(rw, req)
+			assert.Equal(t, rw.Code, test.stCode)
+		})
+	}
+}
+
+func TestGetValue(t *testing.T) {
+	storage := &mockMemStorage{}
+	server := &HTTPServer{
+		storage: storage,
+	}
+
+	tests := []struct {
+		name   string
+		mType  string
+		mName  string
+		stCode int
+	}{
+		{
+			name:   "correct gauge metric",
+			mType:  "gauge",
+			mName:  "pass",
+			stCode: http.StatusOK,
+		},
+		{
+			name:   "incorrect gauge metric",
+			mType:  "gauge",
+			mName:  "fail",
+			stCode: http.StatusNotFound,
+		},
+		{
+			name:   "correct counter metric",
+			mType:  "counter",
+			mName:  "pass",
+			stCode: http.StatusOK,
+		},
+		{
+			name:   "incorrect counter metric",
+			mType:  "counter",
+			mName:  "fail",
+			stCode: http.StatusNotFound,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("Test %s", test.name), func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), contextMetricType, test.mType)
+			ctx = context.WithValue(ctx, contextMetricName, test.mName)
+			req := &http.Request{}
+			req = req.WithContext(ctx)
+			rw := httptest.NewRecorder()
+			server.getValue(rw, req)
 			assert.Equal(t, rw.Code, test.stCode)
 		})
 	}
@@ -191,5 +256,3 @@ func TestCheckMetricName(t *testing.T) {
 		})
 	}
 }
-
-

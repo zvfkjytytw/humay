@@ -57,7 +57,6 @@ func (h *HTTPServer) getValue(w http.ResponseWriter, r *http.Request) {
 		value = strconv.FormatInt(v, 10)
 	}
 
-
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(value))
 }
@@ -94,7 +93,7 @@ func (h *HTTPServer) putValue(w http.ResponseWriter, r *http.Request) {
 		err := h.storage.PutGaugeMetric(metricName, value)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-	        w.Write([]byte(fmt.Sprintf("failed saved metric %s", metricName)))
+			w.Write([]byte(fmt.Sprintf("failed saved metric %s", metricName)))
 			return
 		}
 	}
@@ -103,7 +102,7 @@ func (h *HTTPServer) putValue(w http.ResponseWriter, r *http.Request) {
 		err := h.storage.PutCounterMetric(metricName, value)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-	        w.Write([]byte(fmt.Sprintf("failed saved metric %s", metricName)))
+			w.Write([]byte(fmt.Sprintf("failed saved metric %s", metricName)))
 			return
 		}
 	}
@@ -141,7 +140,7 @@ func checkMetricName(metricType, metricName string) error {
 	}
 
 	if metricName == "" {
-		return errors.New("empty metric name")	
+		return errors.New("empty metric name")
 	}
 
 	return nil
