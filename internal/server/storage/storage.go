@@ -55,7 +55,7 @@ func (s *MemStorage) GetGaugeMetrics(name string) (value map[int64]float64, err 
 	return
 }
 
-func (s *MemStorage) PutGaugeMetric(name string, value float64) {
+func (s *MemStorage) PutGaugeMetric(name string, value float64) (err error) {
 	metric, ok := s.gaugeMetrics[name]
 	if ok {
 		metric.value = value
@@ -68,6 +68,8 @@ func (s *MemStorage) PutGaugeMetric(name string, value float64) {
 			},
 		}
 	}
+
+	return
 }
 
 func (s *MemStorage) GetCounterMetric(name string) (value int64, err error) {
@@ -92,7 +94,7 @@ func (s *MemStorage) GetCounterMetrics(name string) (value map[int64]int64, err 
 	return
 }
 
-func (s *MemStorage) PutCounterMetric(name string, value int64) {
+func (s *MemStorage) PutCounterMetric(name string, value int64) (err error) {
 	metric, ok := s.counterMetrics[name]
 	if ok {
 		metric.value += value
@@ -105,4 +107,6 @@ func (s *MemStorage) PutCounterMetric(name string, value int64) {
 			},
 		}
 	}
+
+	return
 }

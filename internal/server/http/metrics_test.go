@@ -1,12 +1,96 @@
 package humayhttpserver
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type mockMemStorage struct{}
+
+func (m *mockMemStorage) GetGaugeMetric(name string) (value float64, err error) {
+	if name == "fail" {
+		err = errors.New("metric fail not found")
+		return
+	}
+
+	return
+}
+
+func (m *mockMemStorage) PutGaugeMetric(name string, value float64) (err error) {
+	if name == "fail" {
+		err = errors.New("failed saved metric fail")
+		return
+	}
+
+	return
+}
+
+func (m *mockMemStorage) GetCounterMetric(name string) (value int64, err error) {
+	if name == "fail" {
+		err = errors.New("metric fail not found")
+		return
+	}
+
+	return
+}
+
+func (m *mockMemStorage) PutCounterMetric(name string, value int64) (err error) {
+	if name == "fail" {
+		err = errors.New("failed saved metric fail")
+		return
+	}
+
+	return
+}
+
+func TestPutValue(t *testing.T) {
+	storage := &mockMemStorage{}
+	server := &HTTPServer{
+		storage: storage,
+	}
+
+	tests := []struct {
+		name string
+		mType string
+		mName string
+		mValue string
+		stCode int
+	}{
+		{
+			name: "correct gauge metric",
+			mType: "gauge",
+			mName: "pass",
+			mValue: "0",
+			stCode: http.StatusOK,
+		},
+		{
+			name: "incorrect gauge metric",
+			mType: "gauge",
+			mName: "fail",
+			mValue: "0",
+			stCode: http.StatusInternalServerError,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("Test %s", test.name), func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), contextMetricType, test.mType)
+			ctx = context.WithValue(ctx, contextMetricName, test.mName)
+			ctx = context.WithValue(ctx, contextMetricValue, test.mValue)
+			req := &http.Request{}
+			req = req.WithContext(ctx)
+			rw := httptest.NewRecorder()
+			server.putValue(rw, req)
+			assert.Equal(t, rw.Code, test.stCode)
+		})
+	}
+}
 
 func TestCheckUpdateContext(t *testing.T) {
 	tests := []struct {
@@ -107,3 +191,5 @@ func TestCheckMetricName(t *testing.T) {
 		})
 	}
 }
+
+

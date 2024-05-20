@@ -91,11 +91,21 @@ func (h *HTTPServer) putValue(w http.ResponseWriter, r *http.Request) {
 
 	if metricType == "gauge" {
 		value, _ := strconv.ParseFloat(metricValue, 64) //nolint // wraped in checkUpdateContext
-		h.storage.PutGaugeMetric(metricName, value)
+		err := h.storage.PutGaugeMetric(metricName, value)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+	        w.Write([]byte(fmt.Sprintf("failed saved metric %s", metricName)))
+			return
+		}
 	}
 	if metricType == "counter" {
 		value, _ := strconv.ParseInt(metricValue, 10, 64) //nolint // wraped in checkUpdateContext
-		h.storage.PutCounterMetric(metricName, value)
+		err := h.storage.PutCounterMetric(metricName, value)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+	        w.Write([]byte(fmt.Sprintf("failed saved metric %s", metricName)))
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
