@@ -52,4 +52,5 @@ func notImplementedYet(w http.ResponseWriter, r *http.Request) {
 
 func notAllowed(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusMethodNotAllowed)
+	w.Write([]byte("not allowed"))
 }
