@@ -5,6 +5,7 @@ import (
 	"flag"
 
 	serverApp "github.com/zvfkjytytw/humay/internal/server/app"
+	humayHTTPServer "github.com/zvfkjytytw/humay/internal/server/http"
 )
 
 func main() {
@@ -12,7 +13,17 @@ func main() {
 	flag.StringVar(&configFile, "c", "./build/server.yaml", "Server config file")
 	flag.Parse()
 
-	app, err := serverApp.NewAppFromFile(configFile)
+	config := &serverApp.ServerConfig{
+		HTTPConfig: &humayHTTPServer.HTTPConfig{
+			Host: "localhost",
+			Port: 8080,
+			ReadTimeout: 5,
+			WriteTimeout: 10,
+			IdleTimeout: 20,
+		},
+	}
+
+	app, err := serverApp.NewApp(config)
 	if err != nil {
 		panic(err)
 	}

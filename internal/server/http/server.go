@@ -32,7 +32,7 @@ func NewHTTPServer(
 ) *HTTPServer {
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", config.Host, config.Port),
-		ReadTimeout:  5 * time.Second,
+		ReadTimeout:  time.Duration(config.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(config.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(config.IdleTimeout) * time.Second,
 	}
