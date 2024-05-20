@@ -48,9 +48,11 @@ var metricsMap = map[string][]string{
 		"Sys",
 		"TotalAlloc",
 		"RandomValue",
+		"testGauge",
 	},
 	"counter": {
 		"PollCount",
+		"testCounter",
 	},
 }
 
