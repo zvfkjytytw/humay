@@ -75,25 +75,25 @@ func TestCheckMetricName(t *testing.T) {
 			err:        errors.New("unknown metric type"),
 		},
 		{
-			name:       "wrong gauge name",
+			name:       "empty gauge metric",
 			metricType: "gauge",
-			metricName: "gauge",
-			err:        errors.New("unknown metric name"),
+			metricName: "",
+			err:        errors.New("empty metric name"),
 		},
 		{
-			name:       "wrong counter name",
+			name:       "empty counter metric",
 			metricType: "counter",
-			metricName: "counter",
-			err:        errors.New("unknown metric name"),
+			metricName: "",
+			err:        errors.New("empty metric name"),
 		},
 		{
-			name:       "float gauge name",
+			name:       "correct gauge metric",
 			metricType: "gauge",
 			metricName: "Alloc",
 			err:        nil,
 		},
 		{
-			name:       "correct counter name",
+			name:       "correct counter metric",
 			metricType: "counter",
 			metricName: "PollCount",
 			err:        nil,
@@ -107,32 +107,3 @@ func TestCheckMetricName(t *testing.T) {
 		})
 	}
 }
-
-// func TestHTTPServer_getValue(t *testing.T) {
-// 	type fields struct {
-// 		config  *HTTPConfig
-// 		logger  *zap.Logger
-// 		storage *metricsStorage.MemStorage
-// 	}
-// 	type args struct {
-// 		w http.ResponseWriter
-// 		r *http.Request
-// 	}
-// 	tests := []struct {
-// 		name   string
-// 		fields fields
-// 		args   args
-// 	}{
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			h := &HTTPServer{
-// 				config:  tt.fields.config,
-// 				logger:  tt.fields.logger,
-// 				storage: tt.fields.storage,
-// 			}
-// 			h.getValue(tt.args.w, tt.args.r)
-//  		})
-// 	}
-// }

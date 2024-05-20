@@ -18,44 +18,6 @@ const (
 	contextMetricValue
 )
 
-var metricsMap = map[string][]string{
-	"gauge": {
-		"Alloc",
-		"BuckHashSys",
-		"Frees",
-		"GCCPUFraction",
-		"GCSys",
-		"HeapAlloc",
-		"HeapIdle",
-		"HeapInuse",
-		"HeapObjects",
-		"HeapReleased",
-		"HeapSys",
-		"LastGC",
-		"Lookups",
-		"MCacheInuse",
-		"MCacheSys",
-		"MSpanInuse",
-		"MSpanSys",
-		"Mallocs",
-		"NextGC",
-		"NumForcedGC",
-		"NumGC",
-		"OtherSys",
-		"PauseTotalNs",
-		"StackInuse",
-		"StackSys",
-		"Sys",
-		"TotalAlloc",
-		"RandomValue",
-		"testGauge",
-	},
-	"counter": {
-		"PollCount",
-		"testCounter",
-	},
-}
-
 // checking URL path for correctness of the conditions for getting the metric value.
 func valueCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +56,7 @@ func (h *HTTPServer) getValue(w http.ResponseWriter, r *http.Request) {
 		}
 		value = strconv.FormatInt(v, 10)
 	}
-	fmt.Printf("metric %v return value %v\n", metricName, value)
+
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(value))
@@ -163,18 +125,14 @@ func checkUpdateContext(metricType, metricValue string) (err error) {
 	return errors.New("unknown metric type")
 }
 
-// checking the URL for the correct metric name.
 func checkMetricName(metricType, metricName string) error {
-	metrics, ok := metricsMap[metricType]
-	if !ok {
+	if metricType != "gauge" && metricType != "counter" {
 		return errors.New("unknown metric type")
 	}
 
-	for _, metric := range metrics {
-		if metric == metricName {
-			return nil
-		}
+	if metricName == "" {
+		return errors.New("empty metric name")	
 	}
 
-	return errors.New("unknown metric name")
+	return nil
 }
