@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"strconv"
+	"strings"
 
 	serverApp "github.com/zvfkjytytw/humay/internal/server/app"
 	humayHTTPServer "github.com/zvfkjytytw/humay/internal/server/http"
@@ -10,16 +12,20 @@ import (
 
 func main() {
 	var configFile string
+	var address string
 	flag.StringVar(&configFile, "c", "./build/server.yaml", "Server config file")
+	flag.StringVar(&address, "a", "localhost:8080", "Server address")
 	flag.Parse()
+
+	host, port := splitAddress(address)
 
 	config := &serverApp.ServerConfig{
 		HTTPConfig: &humayHTTPServer.HTTPConfig{
-			Host: "localhost",
-			Port: 8080,
-			ReadTimeout: 5,
+			Host:         host,
+			Port:         port,
+			ReadTimeout:  5,
 			WriteTimeout: 10,
-			IdleTimeout: 20,
+			IdleTimeout:  20,
 		},
 	}
 
@@ -32,4 +38,22 @@ func main() {
 	defer cancel()
 
 	app.Run(ctx)
+}
+
+func splitAddress(address string) (host string, port int32) {
+	values := strings.Split(address, ":")
+	if len(values) == 1 {
+		host = values[0]
+		port = 8080
+		return
+	}
+
+	host = values[0]
+	p, err := strconv.Atoi(values[1])
+	if err != nil {
+		port = 8080
+	}
+	port = int32(p)
+
+	return
 }
