@@ -14,7 +14,8 @@ func (h *HTTPServer) newRouter() chi.Router {
 	r.Use(middleware.Recoverer)
 
 	// root handler.
-	r.Get("/*", notAllowed)
+	r.Get("/*", notImplementedYet)
+	r.Post("/*", notImplementedYet)
 
 	// ping handler.
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -24,8 +25,8 @@ func (h *HTTPServer) newRouter() chi.Router {
 
 	// metrics update.
 	r.Route("/update", func(r chi.Router) {
-		r.Get("/", notAllowed)
-		r.Post("/", notAllowed)
+		r.Get("/", notImplementedYet)
+		r.Post("/", notImplementedYet)
 		r.Route("/{metricType}/{metricName}/{metricValue}", func(r chi.Router) {
 			r.Use(updateCtx)
 			r.Post("/", h.putValue)
@@ -34,8 +35,8 @@ func (h *HTTPServer) newRouter() chi.Router {
 
 	// metrics receive.
 	r.Route("/value", func(r chi.Router) {
-		r.Get("/", notAllowed)
-		r.Post("/", notAllowed)
+		r.Get("/", notImplementedYet)
+		r.Post("/", notImplementedYet)
 		r.Route("/{metricType}/{metricName}", func(r chi.Router) {
 			r.Use(valueCtx)
 			r.Get("/", h.getValue)
@@ -48,8 +49,4 @@ func (h *HTTPServer) newRouter() chi.Router {
 func notImplementedYet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte("not implemented yet"))
-}
-
-func notAllowed(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusMethodNotAllowed)
 }
