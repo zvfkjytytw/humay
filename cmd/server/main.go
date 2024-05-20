@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"flag"
+	"os"
 	"strconv"
 	"strings"
 
 	serverApp "github.com/zvfkjytytw/humay/internal/server/app"
 	humayHTTPServer "github.com/zvfkjytytw/humay/internal/server/http"
 )
+
+const envAddress = "ADDRESS"
 
 func main() {
 	var configFile string
@@ -17,6 +20,10 @@ func main() {
 	flag.StringVar(&address, "a", "localhost:8080", "Server address")
 	flag.Parse()
 
+	value, ok := os.LookupEnv(envAddress)
+	if ok {
+		address = value
+	}
 	host, port := splitAddress(address)
 
 	config := &serverApp.ServerConfig{

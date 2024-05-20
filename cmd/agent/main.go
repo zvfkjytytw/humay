@@ -3,10 +3,17 @@ package main
 import (
 	"context"
 	"flag"
+	"os"
 	"strconv"
 	"strings"
 
 	agentApp "github.com/zvfkjytytw/humay/internal/agent/app"
+)
+
+const (
+	envAddress        = "ADDRESS"
+	envReportInterval = "REPORT_INTERVAL"
+	envPollInterval   = "POLL_INTERVAL"
 )
 
 func main() {
@@ -18,7 +25,27 @@ func main() {
 	flag.IntVar(&reportInterval, "r", 10, "Interval for reporting metrics")
 	flag.Parse()
 
+	value, ok := os.LookupEnv(envAddress)
+	if ok {
+		address = value
+	}
 	host, port := splitAddress(address)
+
+	value, ok = os.LookupEnv(envPollInterval)
+	if ok {
+		interval, err := strconv.Atoi(value)
+		if err == nil {
+			pollInterval = interval
+		}
+	}
+
+	value, ok = os.LookupEnv(envReportInterval)
+	if ok {
+		interval, err := strconv.Atoi(value)
+		if err == nil {
+			reportInterval = interval
+		}
+	}
 
 	config := &agentApp.AgentConfig{
 		ServerAddress:  host,
