@@ -62,6 +62,7 @@ func (h *HTTPClient) updateMetric(metricType, metricName, metricValue string) er
 		return err //nolint //wraped higher
 	}
 
+	req.Header.Add("Content-Type", "text/plain")
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return err //nolint //wraped higher
