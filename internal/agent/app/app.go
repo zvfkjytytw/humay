@@ -50,6 +50,7 @@ func NewApp(config *AgentConfig) (*AgentApp, error) {
 	if err != nil {
 		return nil, err
 	}
+	poller.FlushPollCount()
 
 	// Init server client
 	var client serverClient
@@ -115,6 +116,7 @@ func (a *AgentApp) Run(ctx context.Context) {
 				for metricName, metricValue := range a.poller.Metrics.Counter {
 					a.client.UpdateCounter(metricName, metricValue)
 				}
+				a.poller.FlushPollCount()
 			}()
 		}
 	}

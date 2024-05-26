@@ -60,9 +60,14 @@ func (p *Poller) Update() {
 	p.Metrics.Gauge["RandomValue"] = rand.Float64()
 
 	// update counter metrics
-	p.Metrics.Counter["PollCount"] = int64(len(p.Metrics.Gauge))
+	// p.Metrics.Counter["PollCount"] = int64(len(p.Metrics.Gauge))
+	p.Metrics.Counter["PollCount"] += 1
 }
 
 func (p *Poller) updateMemMetrics() {
 	runtime.ReadMemStats(p.memStats)
+}
+
+func (p *Poller) FlushPollCount() {
+	p.Metrics.Counter["PollCount"] = 0
 }

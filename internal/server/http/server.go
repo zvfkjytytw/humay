@@ -14,6 +14,7 @@ type MemStorage interface {
 	PutGaugeMetric(name string, value float64) error
 	GetCounterMetric(name string) (int64, error)
 	PutCounterMetric(name string, value int64) error
+	GetAllMetrics() map[string]map[string]string
 }
 
 type HTTPConfig struct {

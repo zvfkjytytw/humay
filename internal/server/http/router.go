@@ -14,6 +14,7 @@ func (h *HTTPServer) newRouter() chi.Router {
 	r.Use(middleware.Recoverer)
 
 	// root handler.
+	r.Get("/", h.metricsPage)
 	r.Get("/*", notImplementedYet)
 	r.Post("/*", notImplementedYet)
 

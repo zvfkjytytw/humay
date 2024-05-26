@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"go.uber.org/zap"
@@ -92,14 +91,10 @@ func (a *ServerApp) Run(ctx context.Context) {
 }
 
 func (a *ServerApp) StopAll(ctx context.Context) {
-	var wg sync.WaitGroup
-	wg.Add(len(a.services))
 	for _, service := range a.services {
 		err := service.Stop(ctx)
 		if err != nil {
 			a.logger.Error("stop failed")
 		}
-		wg.Done()
 	}
-	wg.Wait()
 }
