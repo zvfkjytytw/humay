@@ -49,6 +49,10 @@ func (m *mockMemStorage) PutCounterMetric(name string, value int64) (err error) 
 	return
 }
 
+func (m *mockMemStorage) GetAllMetrics() map[string]map[string]string {
+	return nil
+}
+
 func TestPutValue(t *testing.T) {
 	storage := &mockMemStorage{}
 	server := &HTTPServer{
