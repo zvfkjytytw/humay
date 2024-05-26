@@ -1,7 +1,6 @@
 package humayhttpserver
 
 import (
-	"fmt"
 	"html/template"
 	"net/http"
 
@@ -99,7 +98,7 @@ func (h *HTTPServer) metricsPage(w http.ResponseWriter, r *http.Request) {
 
 	htmlTemplate, err := template.New("metricsPage").Parse(metricsHTML)
 	if err != nil {
-		fmt.Printf("Parsing error: %w\n", err)
+		h.logger.Sugar().Errorf("Parsing error: %w", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed parsing template"))
 		return
@@ -107,7 +106,7 @@ func (h *HTTPServer) metricsPage(w http.ResponseWriter, r *http.Request) {
 
 	err = htmlTemplate.Execute(w, data)
 	if err != nil {
-		fmt.Printf("Load error: %w\n", err)
+		h.logger.Sugar().Errorf("load error: %w", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed load metrics page"))
 	}
