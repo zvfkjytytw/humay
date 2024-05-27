@@ -14,6 +14,7 @@ var (
     <html>
         <head>
             <meta charset="utf-8">
+            <meta http-equiv="refresh" content="10">
             <title>HUMAY</title> 
         </head>
         <body>
