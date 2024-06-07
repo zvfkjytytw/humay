@@ -99,7 +99,7 @@ func (h *HTTPServer) metricsPage(w http.ResponseWriter, r *http.Request) {
 
 	htmlTemplate, err := template.New("metricsPage").Parse(metricsHTML)
 	if err != nil {
-		h.logger.Sugar().Errorf("Parsing error: %w", err)
+		h.logger.Sugar().Errorf("parsing error: %w", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed parsing template"))
 		return
