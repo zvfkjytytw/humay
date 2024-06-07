@@ -45,8 +45,18 @@ func jsonCtx(next http.Handler) http.Handler {
 		if r.RequestURI == "/update" {
 			switch metric.MType {
 			case "gauge":
+				if metric.Value == nil {
+					w.WriteHeader(http.StatusBadRequest)
+					w.Write([]byte("not specified gauge value"))
+					return
+				}
 				mValue = strconv.FormatFloat(*metric.Value, 'f', -1, 64)
 			case "counter":
+				if metric.Delta == nil {
+					w.WriteHeader(http.StatusBadRequest)
+					w.Write([]byte("not specified counter delta"))
+					return
+				}
 				mValue = strconv.FormatInt(*metric.Delta, 10)
 			}
 		}
@@ -89,7 +99,7 @@ func (h *HTTPServer) putJSONValue(w http.ResponseWriter, r *http.Request) {
 
 	switch metricType {
 	case "gauge":
-		value, _ := strconv.ParseFloat(metricValue, 64)
+		value, _ := strconv.ParseFloat(metricValue, 64) //nolint // wraped in middleware
 		err := h.storage.PutGaugeMetric(metricName, value)
 		if err != nil {
 			h.logger.Sugar().Errorf("failed save gauge metric %s: %w", metricName, err)
@@ -99,7 +109,7 @@ func (h *HTTPServer) putJSONValue(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "counter":
-		value, _ := strconv.ParseInt(metricValue, 10, 64)
+		value, _ := strconv.ParseInt(metricValue, 10, 64) //nolint // wraped in middleware
 		err := h.storage.PutCounterMetric(metricName, value)
 		if err != nil {
 			h.logger.Sugar().Errorf("failed save counter metric %s: %w", metricName, err)
@@ -109,7 +119,7 @@ func (h *HTTPServer) putJSONValue(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	metric, _ := h.getMetricStruct(metricType, metricName)
+	metric, _ := h.getMetricStruct(metricType, metricName) //nolint // this metric just saved
 	body, err := json.Marshal(metric)
 	if err != nil {
 		h.logger.Sugar().Errorf("failed marshal metric %s: %w", metricName, err)

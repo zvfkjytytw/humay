@@ -31,10 +31,13 @@ func (h *HTTPServer) newRouter() chi.Router {
 		r.Route("/", func(r chi.Router) {
 			r.Use(jsonCtx)
 			r.Post("/", h.putJSONValue)
+			r.Post("/*", notImplementedYet)
 		})
 		r.Route("/{metricType}/{metricName}/{metricValue}", func(r chi.Router) {
 			r.Use(updateCtx)
 			r.Post("/", h.putValue)
+			r.Get("/*", notImplementedYet)
+			r.Post("/*", notImplementedYet)
 		})
 	})
 
@@ -44,10 +47,13 @@ func (h *HTTPServer) newRouter() chi.Router {
 		r.Route("/", func(r chi.Router) {
 			r.Use(jsonCtx)
 			r.Post("/", h.getJSONValue)
+			r.Post("/*", notImplementedYet)
 		})
 		r.Route("/{metricType}/{metricName}", func(r chi.Router) {
 			r.Use(valueCtx)
 			r.Get("/", h.getValue)
+			r.Get("/*", notImplementedYet)
+			r.Post("/*", notImplementedYet)
 		})
 	})
 
