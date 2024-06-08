@@ -14,64 +14,59 @@ import (
 // middleware for checking request condition and correctness of the body.
 func jsonCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.RequestURI == httpModels.UpdateHandler || r.RequestURI == httpModels.ValueHandler {
-			contentType, ok := r.Header["Content-Type"]
-			if !ok || contentType[0] != "application/json" {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("wrong Content-Type. Expect application/json"))
-				return
-			}
-
-			defer r.Body.Close()
-			body, err := io.ReadAll(r.Body)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("failed read body"))
-				return
-			}
-
-			metric := &httpModels.Metric{}
-			err = json.Unmarshal(body, metric)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("failed unmarshal body"))
-				return
-			}
-
-			if !checkMetricType(metric.MType) {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(fmt.Sprintf("wrong metric type %s", metric.MType)))
-				return
-			}
-			var mValue string
-			if r.RequestURI == httpModels.UpdateHandler {
-				switch metric.MType {
-				case httpModels.GaugeMetric:
-					if metric.Value == nil {
-						w.WriteHeader(http.StatusBadRequest)
-						w.Write([]byte("not specified gauge value"))
-						return
-					}
-					mValue = strconv.FormatFloat(*metric.Value, 'f', -1, 64)
-				case httpModels.CounterMetric:
-					if metric.Delta == nil {
-						w.WriteHeader(http.StatusBadRequest)
-						w.Write([]byte("not specified counter delta"))
-						return
-					}
-					mValue = strconv.FormatInt(*metric.Delta, 10)
-				}
-			}
-
-			ctx := context.WithValue(r.Context(), contextMetricType, metric.MType)
-			ctx = context.WithValue(ctx, contextMetricName, metric.ID)
-			ctx = context.WithValue(ctx, contextMetricValue, mValue)
-
-			next.ServeHTTP(w, r.WithContext(ctx))
-		} else {
-			next.ServeHTTP(w, r)
+		contentType, ok := r.Header["Content-Type"]
+		if !ok || contentType[0] != "application/json" {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("wrong Content-Type. Expect application/json"))
+			return
 		}
 
+		defer r.Body.Close()
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("failed read body"))
+			return
+		}
+
+		metric := &httpModels.Metric{}
+		err = json.Unmarshal(body, metric)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("failed unmarshal body"))
+			return
+		}
+
+		if !checkMetricType(metric.MType) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(fmt.Sprintf("wrong metric type %s", metric.MType)))
+			return
+		}
+		var mValue string
+		if r.RequestURI == httpModels.UpdateHandler || r.RequestURI == httpModels.UpdateHandlerSlash {
+			switch metric.MType {
+			case httpModels.GaugeMetric:
+				if metric.Value == nil {
+					w.WriteHeader(http.StatusBadRequest)
+					w.Write([]byte("not specified gauge value"))
+					return
+				}
+				mValue = strconv.FormatFloat(*metric.Value, 'f', -1, 64)
+			case httpModels.CounterMetric:
+				if metric.Delta == nil {
+					w.WriteHeader(http.StatusBadRequest)
+					w.Write([]byte("not specified counter delta"))
+					return
+				}
+				mValue = strconv.FormatInt(*metric.Delta, 10)
+			}
+		}
+
+		ctx := context.WithValue(r.Context(), contextMetricType, metric.MType)
+		ctx = context.WithValue(ctx, contextMetricName, metric.ID)
+		ctx = context.WithValue(ctx, contextMetricValue, mValue)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

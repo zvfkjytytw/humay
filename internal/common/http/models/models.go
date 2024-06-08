@@ -1,11 +1,13 @@
 package httpmodels
 
 var (
-	CounterMetric = "counter"
-	GaugeMetric   = "gauge"
-	MetricTypes   = []string{CounterMetric, GaugeMetric}
-	UpdateHandler = "/update"
-	ValueHandler  = "/value"
+	CounterMetric      = "counter"
+	GaugeMetric        = "gauge"
+	MetricTypes        = []string{CounterMetric, GaugeMetric}
+	UpdateHandler      = "/update"
+	ValueHandler       = "/value"
+	UpdateHandlerSlash = "/update/"
+	ValueHandlerSlash  = "/value/"
 )
 
 type Metric struct {

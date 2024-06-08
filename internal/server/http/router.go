@@ -10,6 +10,7 @@ import (
 func (h *HTTPServer) newRouter() chi.Router {
 	r := chi.NewRouter()
 
+	r.Use(middleware.StripSlashes)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 	r.Use(h.logging)
