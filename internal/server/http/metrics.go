@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+
+	httpModels "github.com/zvfkjytytw/humay/internal/common/http/models"
 )
 
 type contextKey int
@@ -25,7 +27,7 @@ func valueCtx(next http.Handler) http.Handler {
 		metricName := chi.URLParam(r, "metricName")
 
 		if err := checkMetricName(metricType, metricName); err != nil {
-			http.Error(w, fmt.Sprintf("%v", err), http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
 			return
 		}
 		ctx := context.WithValue(r.Context(), contextMetricType, metricType)
@@ -39,7 +41,7 @@ func (h *HTTPServer) getValue(w http.ResponseWriter, r *http.Request) {
 	metricName := fmt.Sprintf("%v", r.Context().Value(contextMetricName))
 	var value string
 
-	if metricType == "gauge" {
+	if metricType == httpModels.GaugeMetric {
 		v, err := h.storage.GetGaugeMetric(metricName)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusNotFound)
@@ -48,7 +50,7 @@ func (h *HTTPServer) getValue(w http.ResponseWriter, r *http.Request) {
 		value = strconv.FormatFloat(v, 'f', -1, 64)
 	}
 
-	if metricType == "counter" {
+	if metricType == httpModels.CounterMetric {
 		v, err := h.storage.GetCounterMetric(metricName)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("%v", err), http.StatusNotFound)
@@ -74,7 +76,7 @@ func updateCtx(next http.Handler) http.Handler {
 			return
 		}
 		if err := checkMetricName(metricType, metricName); err != nil {
-			http.Error(w, fmt.Sprintf("%v", err), http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
 			return
 		}
 		ctx := context.WithValue(r.Context(), contextMetricType, metricType)
@@ -89,7 +91,7 @@ func (h *HTTPServer) putValue(w http.ResponseWriter, r *http.Request) {
 	metricName := fmt.Sprintf("%v", r.Context().Value(contextMetricName))
 	metricValue := fmt.Sprintf("%v", r.Context().Value(contextMetricValue))
 
-	if metricType == "gauge" {
+	if metricType == httpModels.GaugeMetric {
 		value, _ := strconv.ParseFloat(metricValue, 64) //nolint // wraped in checkUpdateContext
 		err := h.storage.PutGaugeMetric(metricName, value)
 		if err != nil {
@@ -98,7 +100,7 @@ func (h *HTTPServer) putValue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if metricType == "counter" {
+	if metricType == httpModels.CounterMetric {
 		value, _ := strconv.ParseInt(metricValue, 10, 64) //nolint // wraped in checkUpdateContext
 		err := h.storage.PutCounterMetric(metricName, value)
 		if err != nil {
@@ -115,7 +117,7 @@ func (h *HTTPServer) putValue(w http.ResponseWriter, r *http.Request) {
 
 // checking the URL for the correct metric type and value.
 func checkUpdateContext(metricType, metricValue string) (err error) {
-	if metricType == "gauge" {
+	if metricType == httpModels.GaugeMetric {
 		_, err = strconv.ParseFloat(metricValue, 64)
 		if err == nil {
 			return nil
@@ -124,7 +126,7 @@ func checkUpdateContext(metricType, metricValue string) (err error) {
 		return errors.New("wrong gauge value")
 	}
 
-	if metricType == "counter" {
+	if metricType == httpModels.CounterMetric {
 		_, err = strconv.ParseInt(metricValue, 10, 64)
 		if err == nil {
 			return nil
@@ -137,7 +139,7 @@ func checkUpdateContext(metricType, metricValue string) (err error) {
 }
 
 func checkMetricName(metricType, metricName string) error {
-	if metricType != "gauge" && metricType != "counter" {
+	if metricType != httpModels.GaugeMetric && metricType != httpModels.CounterMetric {
 		return errors.New("unknown metric type")
 	}
 

@@ -1,6 +1,8 @@
 package humayhttpagent
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -8,14 +10,13 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	httpModels "github.com/zvfkjytytw/humay/internal/common/http/models"
 )
 
 const (
-	HTTPProtocol  = "http:/"
-	HTTPSProtocol = "https:/"
-	updateHandler = "update"
-	gaugeType     = "gauge"
-	counterType   = "counter"
+	HTTPProtocol  = "http"
+	HTTPSProtocol = "https"
 )
 
 type HTTPClient struct {
@@ -40,14 +41,15 @@ func NewClient(address string, logger *zap.Logger) (*HTTPClient, error) {
 	}, nil
 }
 
+// update metric block for text/plain case.
 func (h *HTTPClient) UpdateGauge(metricName string, metricValue float64) error {
 	value := strconv.FormatFloat(metricValue, 'f', -1, 64)
-	return h.updateMetric(gaugeType, metricName, value) //nolint //wraped higher
+	return h.updateMetric(httpModels.GaugeMetric, metricName, value) //nolint //wraped higher
 }
 
 func (h *HTTPClient) UpdateCounter(metricName string, metricValue int64) error {
 	value := strconv.FormatInt(metricValue, 10)
-	return h.updateMetric(counterType, metricName, value) //nolint //wraped higher
+	return h.updateMetric(httpModels.CounterMetric, metricName, value) //nolint //wraped higher
 }
 
 func (h *HTTPClient) updateMetric(metricType, metricName, metricValue string) error {
@@ -55,7 +57,7 @@ func (h *HTTPClient) updateMetric(metricType, metricName, metricValue string) er
 
 	req, err := http.NewRequest(
 		http.MethodPost,
-		strings.Join([]string{h.protocol, h.address, updateHandler, metricType, metricName, metricValue}, "/"),
+		fmt.Sprintf("%s://%s%s", h.protocol, h.address, strings.Join([]string{httpModels.UpdateHandler, metricType, metricName, metricValue}, "/")),
 		strings.NewReader(body),
 	)
 	if err != nil {
@@ -71,6 +73,55 @@ func (h *HTTPClient) updateMetric(metricType, metricName, metricValue string) er
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("metric %s not saved", metricName)
+	}
+
+	return nil
+}
+
+// update metric block for application/json case.
+func (h *HTTPClient) UpdateJSONGauge(metricName string, metricValue float64) error {
+	metric := &httpModels.Metric{
+		ID:    metricName,
+		MType: httpModels.GaugeMetric,
+		Value: &metricValue,
+	}
+	return h.updateJSONMetric(metric) //nolint //wraped higher
+}
+
+func (h *HTTPClient) UpdateJSONCounter(metricName string, metricValue int64) error {
+	metric := &httpModels.Metric{
+		ID:    metricName,
+		MType: httpModels.CounterMetric,
+		Delta: &metricValue,
+	}
+	return h.updateJSONMetric(metric) //nolint //wraped higher
+}
+
+func (h *HTTPClient) updateJSONMetric(metric *httpModels.Metric) error {
+	body, err := json.Marshal(metric)
+	if err != nil {
+		h.logger.Sugar().Errorf("failed marshal metric body: %v", metric)
+		return err
+	}
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("%s://%s%s", h.protocol, h.address, httpModels.UpdateHandler),
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return err //nolint //wraped higher
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := h.client.Do(req)
+	if err != nil {
+		return err //nolint //wraped higher
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("metric %s not saved", metric.ID)
 	}
 
 	return nil

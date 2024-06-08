@@ -1,6 +1,12 @@
 package httpmodels
 
-var MetricTypes = []string{"counter", "gauge"}
+var (
+	CounterMetric = "counter"
+	GaugeMetric   = "gauge"
+	MetricTypes   = []string{CounterMetric, GaugeMetric}
+	UpdateHandler = "/update"
+	ValueHandler  = "/value"
+)
 
 type Metric struct {
 	ID    string   `json:"id"`              // имя метрики
