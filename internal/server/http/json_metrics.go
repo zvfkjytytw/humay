@@ -152,13 +152,12 @@ func (h *HTTPServer) getMetricStruct(mType, mName string) (*httpModels.Metric, e
 		}
 		metric.Value = &value
 	case httpModels.CounterMetric:
-		v, err := h.storage.GetCounterMetric(mName)
+		value, err := h.storage.GetCounterMetric(mName)
 		if err != nil {
 			h.logger.Sugar().Errorf("failed get metric: %w", err)
 			return nil, err
 		}
-		value := float64(v)
-		metric.Value = &value
+		metric.Delta = &value
 	}
 
 	return metric, nil
