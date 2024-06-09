@@ -1,7 +1,9 @@
 package humayhttpserver
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -13,27 +15,25 @@ type (
 	responseData struct {
 		statusCode int
 		answerSize int
+		answerBody string
 	}
 
 	loggingResponseWriter struct {
-		responseWriter http.ResponseWriter
-		responseData   *responseData
+		http.ResponseWriter
+		responseData *responseData
 	}
 )
 
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
-	size, err := r.responseWriter.Write(b)
+	size, err := r.ResponseWriter.Write(b)
 	r.responseData.answerSize = size
+	r.responseData.answerBody = string(b)
 	return size, err
 }
 
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
-	r.responseWriter.WriteHeader(statusCode)
+	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.statusCode = statusCode
-}
-
-func (r *loggingResponseWriter) Header() http.Header {
-	return r.responseWriter.Header()
 }
 
 func (h *HTTPServer) logging(next http.Handler) http.Handler {
@@ -45,9 +45,23 @@ func (h *HTTPServer) logging(next http.Handler) http.Handler {
 		}
 		method := r.Method
 		uri := r.URL.Path
+		var b bytes.Buffer
+		b.ReadFrom(r.Body)
+		r.Body = io.NopCloser(&b)
+
+		var body string
+		var rBody []byte
+
+		_, err := b.Read(rBody)
+		if err != nil {
+			fmt.Printf("read body error: %v\n", err)
+			body = "failed read body"
+		} else {
+			body = string(rBody)
+		}
 
 		lw := &loggingResponseWriter{
-			responseWriter: w,
+			ResponseWriter: w,
 			responseData:   &responseData{},
 		}
 
@@ -58,9 +72,11 @@ func (h *HTTPServer) logging(next http.Handler) http.Handler {
 			fmt.Sprintf("Request %v", rID),
 			zap.String("Method", method),
 			zap.String("URI", uri),
+			zap.String("ReqBody", body),
 			zap.String("Duration", fmt.Sprintf("%d ns", rDuration)),
 			zap.Int("Response Code", lw.responseData.statusCode),
 			zap.Int("Response Length", lw.responseData.answerSize),
+			zap.String("RespBody", lw.responseData.answerBody),
 		)
 	})
 }
