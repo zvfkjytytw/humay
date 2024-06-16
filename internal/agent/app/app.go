@@ -88,9 +88,6 @@ func NewAppFromFile(configFile string) (*AgentApp, error) {
 }
 
 func (a *AgentApp) Run(ctx context.Context) {
-	// test TotalAlloc
-	a.client.UpdateGauge("TotalAlloc", 1)
-
 	pollTicker := time.NewTicker(time.Duration(a.pollInterval) * time.Second)
 	defer pollTicker.Stop()
 	reportTicker := time.NewTicker(time.Duration(a.reportInterval) * time.Second)

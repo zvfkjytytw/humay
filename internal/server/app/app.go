@@ -38,6 +38,7 @@ func NewApp(config *ServerConfig) (*ServerApp, error) {
 
 	// Init storage
 	storage := humayStorage.NewStorage()
+	storage.PutGaugeMetric("TotalAlloc", 1)
 
 	// Init HTTP server
 	httpServer := humayHTTPServer.NewHTTPServer(config.HTTPConfig, logger, storage)
