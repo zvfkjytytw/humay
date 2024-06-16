@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	httpModels "github.com/zvfkjytytw/humay/internal/common/http/models"
 )
@@ -63,7 +64,7 @@ func jsonCtx(next http.Handler) http.Handler {
 		}
 
 		ctx := context.WithValue(r.Context(), contextMetricType, metric.MType)
-		ctx = context.WithValue(ctx, contextMetricName, metric.ID)
+		ctx = context.WithValue(ctx, contextMetricName, strings.TrimSpace(metric.ID))
 		ctx = context.WithValue(ctx, contextMetricValue, mValue)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
