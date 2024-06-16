@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func ReadConfigFile(configFile string) ([]byte, error) {
@@ -23,5 +24,18 @@ func ReadConfigFile(configFile string) ([]byte, error) {
 }
 
 func InitLogger() (*zap.Logger, error) {
-	return zap.NewProduction() //nolint // wraped higher
+	config := zap.Config{
+		Level:            zap.NewAtomicLevelAt(zapcore.InfoLevel),
+		Development:      true,
+		Encoding:         "json",
+		EncoderConfig:    zap.NewProductionEncoderConfig(),
+		OutputPaths:      []string{"stdout", "humay.log"},
+		ErrorOutputPaths: []string{"stderr", "humay.log"},
+	}
+	logger, err := config.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return logger, nil
 }

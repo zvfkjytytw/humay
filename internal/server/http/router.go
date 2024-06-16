@@ -10,13 +10,13 @@ import (
 func (h *HTTPServer) newRouter() chi.Router {
 	r := chi.NewRouter()
 
+	r.Use(middleware.StripSlashes)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
+	r.Use(h.logging)
 
 	// root handler.
 	r.Get("/", h.metricsPage)
-	r.Get("/*", notImplementedYet)
-	r.Post("/*", notImplementedYet)
 
 	// ping handler.
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -24,29 +24,36 @@ func (h *HTTPServer) newRouter() chi.Router {
 		w.Write([]byte("pong"))
 	})
 
-	// metrics update.
-	r.Route("/update", func(r chi.Router) {
+	// handler for update metric in text/plain content-type.
+	r.Route("/update/{metricType}/{metricName}/{metricValue}", func(r chi.Router) {
+		r.Use(updateCtx)
+		r.Post("/", h.putValue)
 		r.Get("/", notImplementedYet)
-		r.Post("/", notImplementedYet)
-		r.Route("/{metricType}/{metricName}/{metricValue}", func(r chi.Router) {
-			r.Use(updateCtx)
-			r.Post("/", h.putValue)
-		})
 	})
 
-	// metrics receive.
-	r.Route("/value", func(r chi.Router) {
-		r.Get("/", notImplementedYet)
+	// handler for get value of metric in text/plain content-type.
+	r.Route("/value/{metricType}/{metricName}", func(r chi.Router) {
+		r.Use(valueCtx)
+		r.Get("/", h.getValue)
 		r.Post("/", notImplementedYet)
-		r.Route("/{metricType}/{metricName}", func(r chi.Router) {
-			r.Use(valueCtx)
-			r.Get("/", h.getValue)
-		})
 	})
+
+	// handlers for application/json content-type.
+	r.Group(func(r chi.Router) {
+		r.Use(jsonCtx)
+		r.Post("/update", h.putJSONValue)
+		r.Post("/value", h.getJSONValue)
+	})
+
+	// stubs.
+	r.Get("/*", notImplementedYet)
+	r.Post("/*", notImplementedYet)
+	r.Put("/*", notImplementedYet)
 
 	return r
 }
 
+// not implemented handlers.
 func notImplementedYet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte("not implemented yet"))
