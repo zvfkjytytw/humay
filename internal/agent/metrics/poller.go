@@ -31,6 +31,7 @@ func (p *Poller) Update() {
 
 	// update gauge metrics
 	p.Metrics.Gauge["Alloc"] = float64(p.memStats.Alloc)
+	p.Metrics.Gauge["TotalAlloc "] = float64(p.memStats.TotalAlloc)
 	p.Metrics.Gauge["BuckHashSys"] = float64(p.memStats.BuckHashSys)
 	p.Metrics.Gauge["Frees"] = float64(p.memStats.Frees)
 	p.Metrics.Gauge["GCCPUFraction"] = float64(p.memStats.GCCPUFraction)
@@ -56,11 +57,9 @@ func (p *Poller) Update() {
 	p.Metrics.Gauge["StackInuse"] = float64(p.memStats.StackInuse)
 	p.Metrics.Gauge["StackSys"] = float64(p.memStats.StackSys)
 	p.Metrics.Gauge["Sys"] = float64(p.memStats.Sys)
-	p.Metrics.Gauge["TotalAlloc "] = float64(p.memStats.TotalAlloc)
 	p.Metrics.Gauge["RandomValue"] = rand.Float64()
 
 	// update counter metrics
-	// p.Metrics.Counter["PollCount"] = int64(len(p.Metrics.Gauge))
 	p.Metrics.Counter["PollCount"] += 1
 }
 

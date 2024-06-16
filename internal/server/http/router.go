@@ -24,13 +24,6 @@ func (h *HTTPServer) newRouter() chi.Router {
 		w.Write([]byte("pong"))
 	})
 
-	// handlers for application/json content-type.
-	r.Group(func(r chi.Router) {
-		r.Use(jsonCtx)
-		r.Post("/update", h.putJSONValue)
-		r.Post("/value", h.getJSONValue)
-	})
-
 	// handler for update metric in text/plain content-type.
 	r.Route("/update/{metricType}/{metricName}/{metricValue}", func(r chi.Router) {
 		r.Use(updateCtx)
@@ -43,6 +36,13 @@ func (h *HTTPServer) newRouter() chi.Router {
 		r.Use(valueCtx)
 		r.Get("/", h.getValue)
 		r.Post("/", notImplementedYet)
+	})
+
+	// handlers for application/json content-type.
+	r.Group(func(r chi.Router) {
+		r.Use(jsonCtx)
+		r.Post("/update", h.putJSONValue)
+		r.Post("/value", h.getJSONValue)
 	})
 
 	// stubs.
