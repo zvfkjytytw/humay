@@ -5,6 +5,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	hm "github.com/zvfkjytytw/humay/internal/server/http/middleware"
 )
 
 func (h *HTTPServer) newRouter() chi.Router {
@@ -13,7 +15,8 @@ func (h *HTTPServer) newRouter() chi.Router {
 	r.Use(middleware.StripSlashes)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
-	r.Use(h.logging)
+	r.Use(hm.Logging(h.logger))
+	r.Use(hm.Compressor())
 
 	// root handler.
 	r.Get("/", h.metricsPage)

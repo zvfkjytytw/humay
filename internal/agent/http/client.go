@@ -2,6 +2,7 @@ package humayhttpagent
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -104,16 +105,28 @@ func (h *HTTPClient) updateJSONMetric(metric *httpModels.Metric) error {
 		return err
 	}
 
+	buf := &bytes.Buffer{}
+	gzWriter, _ := gzip.NewWriterLevel(buf, gzip.BestCompression)
+	if _, err := gzWriter.Write(body); err != nil {
+		h.logger.Sugar().Errorf("failed compress body: %v", err)
+		return err
+	}
+	if err := gzWriter.Close(); err != nil {
+		h.logger.Sugar().Errorf("failed close compressor: %v", err)
+		return err
+	}
+
 	req, err := http.NewRequest(
 		http.MethodPost,
 		fmt.Sprintf("%s://%s%s", h.protocol, h.address, httpModels.UpdateHandler),
-		bytes.NewReader(body),
+		bytes.NewReader(buf.Bytes()),
 	)
 	if err != nil {
 		return err //nolint //wraped higher
 	}
 
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Encoding", "gzip")
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return err //nolint //wraped higher
