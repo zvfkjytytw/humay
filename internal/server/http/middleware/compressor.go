@@ -18,8 +18,8 @@ func (w *compressedResponseWriter) Write(b []byte) (int, error) {
 	}
 	defer writer.Close()
 
-	w.Header().Set("Accept-Encoding", "gzip")
-	w.Header().Set("Content-Encoding", "gzip")
+	w.ResponseWriter.Header().Add("Accept-Encoding", "gzip")
+	w.ResponseWriter.Header().Add("Content-Encoding", "gzip")
 	return writer.Write(b)
 }
 
