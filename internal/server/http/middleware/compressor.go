@@ -3,6 +3,7 @@ package humayhttpmiddleware
 import (
 	"compress/gzip"
 	"net/http"
+	"strings"
 )
 
 type compressedResponseWriter struct {
@@ -25,7 +26,7 @@ func Compressor() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cType := r.Header.Get("Content-Type")
-			if cType == "application/json" || cType == "text/html" {
+			if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && (cType == "application/json" || cType == "text/html") {
 				switch r.Header.Get("Content-Encoding") {
 				case "gzip":
 					gz, err := gzip.NewReader(r.Body)
@@ -35,8 +36,8 @@ func Compressor() func(http.Handler) http.Handler {
 						return
 					}
 					r.Body = gz
-					w.Header().Set("Accept-Encoding", "gzip")
-					w.Header().Set("Content-Encoding", "gzip")
+					w.Header().Add("Accept-Encoding", "gzip")
+					w.Header().Add("Content-Encoding", "gzip")
 					w = &compressedResponseWriter{ResponseWriter: w}
 				}
 			}

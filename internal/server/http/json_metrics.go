@@ -90,10 +90,6 @@ func (h *HTTPServer) getJSONValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ntr
-	// w.Header().Set("Accept-Encoding", "gzip")
-	// w.Header().Set("Content-Encoding", "gzip")
-	//
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
@@ -136,10 +132,6 @@ func (h *HTTPServer) putJSONValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ntr
-	// w.Header().Set("Accept-Encoding", "gzip")
-	// w.Header().Set("Content-Encoding", "gzip")
-	//
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
