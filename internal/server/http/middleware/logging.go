@@ -60,7 +60,7 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 				zap.String("Duration", fmt.Sprintf("%d ns", rDuration)),
 				zap.Int("Response Code", lw.responseData.statusCode),
 				zap.Int("Response Length", lw.responseData.answerSize),
-				// zap.String("Response Body", lw.responseData.answerBody), // for debug
+				zap.String("Response Body", lw.responseData.answerBody), // for debug
 			)
 		})
 	}

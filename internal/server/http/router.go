@@ -13,10 +13,10 @@ func (h *HTTPServer) newRouter() chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.StripSlashes)
+	r.Use(hm.Compressor())
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 	r.Use(hm.Logging(h.logger))
-	r.Use(hm.Compressor())
 
 	// root handler.
 	r.Get("/", h.metricsPage)
