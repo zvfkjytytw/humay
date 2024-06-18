@@ -105,6 +105,10 @@ func (h *HTTPServer) metricsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ntr
+	w.Header().Set("Accept-Encoding", "gzip")
+	w.Header().Set("Content-Encoding", "gzip")
+	//
 	err = htmlTemplate.Execute(w, data)
 	if err != nil {
 		h.logger.Sugar().Errorf("load error: %w", err)
