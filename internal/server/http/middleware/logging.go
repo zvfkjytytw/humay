@@ -44,6 +44,9 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 			}
 			method := r.Method
 			uri := r.URL.Path
+			cType := r.Header.Get("Content-Type")
+			aEnc := r.Header.Get("Accept-Encoding")
+			cEnc := r.Header.Get("Content-Encoding")
 
 			lw := &loggingResponseWriter{
 				ResponseWriter: w,
@@ -57,6 +60,9 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 				fmt.Sprintf("Request %v", rID),
 				zap.String("Method", method),
 				zap.String("URI", uri),
+				zap.String("Content-Type", cType),
+				zap.String("Content-Encodig", cEnc),
+				zap.String("Accept-Encodig", aEnc),
 				zap.String("Duration", fmt.Sprintf("%d ns", rDuration)),
 				zap.Int("Response Code", lw.responseData.statusCode),
 				zap.Int("Response Length", lw.responseData.answerSize),
