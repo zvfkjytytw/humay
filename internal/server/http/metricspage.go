@@ -105,6 +105,7 @@ func (h *HTTPServer) metricsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/html")
 	err = htmlTemplate.Execute(w, data)
 	if err != nil {
 		h.logger.Sugar().Errorf("load error: %w", err)
