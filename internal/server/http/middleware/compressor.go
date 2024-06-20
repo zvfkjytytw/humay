@@ -36,8 +36,8 @@ func Compressor() func(http.Handler) http.Handler {
 						return
 					}
 					r.Body = gz
-					w.Header().Add("Accept-Encoding", "gzip")
-					w.Header().Add("Content-Encoding", "gzip")
+					// w.Header().Add("Accept-Encoding", "gzip")
+					w.Header().Set("Content-Encoding", "gzip")
 					w = &compressedResponseWriter{ResponseWriter: w}
 				}
 			}
