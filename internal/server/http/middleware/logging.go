@@ -1,7 +1,9 @@
 package humayhttpmiddleware
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -42,11 +44,17 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 			if !ok {
 				logger.Error("undefined request id")
 			}
+
 			method := r.Method
 			uri := r.URL.Path
-			// cType := r.Header.Get("Content-Type")
-			// aEnc := r.Header.Get("Accept-Encoding")
-			// cEnc := r.Header.Get("Content-Encoding")
+			cType := r.Header.Get("Content-Type")
+			aEnc := r.Header.Get("Accept-Encoding")
+			cEnc := r.Header.Get("Content-Encoding")
+
+			// read request body
+			bodyBytes, _ := io.ReadAll(r.Body)
+			requestBody := string(bodyBytes)
+			r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 			lw := &loggingResponseWriter{
 				ResponseWriter: w,
@@ -60,13 +68,14 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 				fmt.Sprintf("Request %v", rID),
 				zap.String("Method", method),
 				zap.String("URI", uri),
-				// zap.String("Content-Type", cType), // for debug
-				// zap.String("Content-Encodig", cEnc), // for debug
-				// zap.String("Accept-Encodig", aEnc), // for debug
+				zap.String("Content-Type", cType),      // for debug
+				zap.String("Content-Encodig", cEnc),    // for debug
+				zap.String("Accept-Encodig", aEnc),     // for debug
+				zap.String("RequestBody", requestBody), // for debug
 				zap.String("Duration", fmt.Sprintf("%d ns", rDuration)),
 				zap.Int("Response Code", lw.responseData.statusCode),
 				zap.Int("Response Length", lw.responseData.answerSize),
-				// zap.String("Response Body", lw.responseData.answerBody), // for debug
+				zap.String("Response Body", lw.responseData.answerBody), // for debug
 			)
 		})
 	}
