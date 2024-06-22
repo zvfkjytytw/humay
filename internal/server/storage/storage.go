@@ -11,8 +11,8 @@ type MemStorage struct {
 	autosave       bool
 	storageType    string
 	storageFile    string
-	GaugeMetrics   map[string]float64 `json: "gauge_metrics"`
-	CounterMetrics map[string]int64   `json: "counter_metrics"`
+	GaugeMetrics   map[string]float64 `json:"gauge_metrics,omitempty"`
+	CounterMetrics map[string]int64   `json:"counter_metrics,omitempty"`
 }
 
 func NewStorage(storageFile string) *MemStorage {
