@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testStorage = NewStorage("no_auto_save")
+var testStorage = NewStorage("no_auto_save", "no_db")
 
 func TestGetType(t *testing.T) {
 	sType := testStorage.GetType()
