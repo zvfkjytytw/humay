@@ -53,6 +53,10 @@ func (m *mockMemStorage) GetAllMetrics() map[string]map[string]string {
 	return nil
 }
 
+func (m *mockMemStorage) CheckDBConnect(ctx context.Context) error {
+	return nil
+}
+
 func TestPutValue(t *testing.T) {
 	storage := &mockMemStorage{}
 	server := &HTTPServer{

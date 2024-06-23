@@ -22,6 +22,7 @@ type Service interface {
 type ServerConfig struct {
 	HTTPConfig  *humayHTTPServer.HTTPConfig `yaml:"http_config" json:"http_config"`
 	SaverConfig *SaverConfig                `yaml:"saver_config" json:"saver_config"`
+	DatabaseDSN string                      `yaml:"database_dsn" json:"database_dsn"`
 }
 
 type ServerApp struct {
@@ -37,7 +38,7 @@ func NewApp(config *ServerConfig) (*ServerApp, error) {
 	}
 
 	// Init storage
-	storage := humayStorage.NewStorage(config.SaverConfig.StorageFile)
+	storage := humayStorage.NewStorage(config.SaverConfig.StorageFile, config.DatabaseDSN)
 	if config.SaverConfig.Restore {
 		err := storage.Restore(config.SaverConfig.StorageFile)
 		if err != nil {

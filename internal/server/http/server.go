@@ -15,6 +15,7 @@ type MemStorage interface {
 	GetCounterMetric(name string) (int64, error)
 	PutCounterMetric(name string, value int64) error
 	GetAllMetrics() map[string]map[string]string
+	CheckDBConnect(context.Context) error
 }
 
 type HTTPConfig struct {

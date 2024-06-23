@@ -16,6 +16,7 @@ const (
 	restoreEnv         = "RESTORE"
 	storageIntervalEnv = "STORE_INTERVAL"
 	fileStoragePathEnv = "FILE_STORAGE_PATH"
+	databaseDSNEnv     = "DATABASE_DSN"
 )
 
 func main() {
@@ -30,6 +31,8 @@ func main() {
 		fileStoragePath string
 		// flag for restore data
 		restore bool
+		// dsn for connect to postgres
+		databaseDSN string
 	)
 
 	flag.StringVar(&configFile, "c", "./build/server.yaml", "Server config file")
@@ -37,6 +40,7 @@ func main() {
 	flag.StringVar(&fileStoragePath, "f", "/tmp/metrics-db.json", "Data storage file")
 	flag.IntVar(&storageInterval, "i", 300, "Interval between saving data")
 	flag.BoolVar(&restore, "r", true, "Restore data at the time of launch")
+	flag.StringVar(&databaseDSN, "d", "", "DSN for postgreSQL connection")
 	flag.Parse()
 
 	value, ok := os.LookupEnv(addressEnv)
@@ -44,6 +48,11 @@ func main() {
 		address = value
 	}
 	host, port := splitAddress(address)
+
+	value, ok = os.LookupEnv(databaseDSNEnv)
+	if ok {
+		databaseDSN = value
+	}
 
 	saverConfig, err := getSaverConfig(storageInterval, fileStoragePath, restore)
 	if err != nil {
@@ -59,6 +68,7 @@ func main() {
 			IdleTimeout:  20,
 		},
 		SaverConfig: saverConfig,
+		DatabaseDSN: databaseDSN,
 	}
 
 	app, err := serverApp.NewApp(config)
@@ -122,5 +132,4 @@ func getSaverConfig(i int, f string, r bool) (*serverApp.SaverConfig, error) {
 		StorageFile: fStorage,
 		Restore:     restore,
 	}, nil
-
 }
