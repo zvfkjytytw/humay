@@ -131,6 +131,10 @@ func (s *PGStorage) GetAllMetrics() map[string]map[string]string {
 	if err != nil {
 		return nil
 	}
+	if err = rows.Err(); err != nil {
+		return nil
+	}
+
 	for rows.Next() {
 		var name string
 		var value float64
@@ -149,6 +153,10 @@ func (s *PGStorage) GetAllMetrics() map[string]map[string]string {
 	if err != nil {
 		return nil
 	}
+	if err = rows.Err(); err != nil {
+		return nil
+	}
+
 	for rows.Next() {
 		var name string
 		var value int64
