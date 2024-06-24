@@ -2,7 +2,6 @@ package humayserver
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,7 +20,9 @@ type Service interface {
 }
 
 type ServerConfig struct {
-	HTTPConfig *humayHTTPServer.HTTPConfig `yaml:"http_config"`
+	HTTPConfig  *humayHTTPServer.HTTPConfig `yaml:"http_config" json:"http_config"`
+	SaverConfig *SaverConfig                `yaml:"saver_config" json:"saver_config"`
+	DatabaseDSN string                      `yaml:"database_dsn" json:"database_dsn"`
 }
 
 type ServerApp struct {
@@ -36,18 +37,40 @@ func NewApp(config *ServerConfig) (*ServerApp, error) {
 		return nil, err
 	}
 
+	// Init App
+	app := &ServerApp{
+		logger: logger,
+	}
+
 	// Init storage
-	storage := humayStorage.NewStorage()
+	var storage humayHTTPServer.Storage
+
+	storage, err = humayStorage.NewPGStorage(config.DatabaseDSN)
+	if err != nil {
+		logger.Sugar().Errorf("failed init postgres storage% %v", err)
+		memStorage := humayStorage.NewStorage(config.SaverConfig.StorageFile, config.DatabaseDSN)
+		if config.SaverConfig.Restore {
+			err := memStorage.Restore(config.SaverConfig.StorageFile)
+			if err != nil {
+				logger.Sugar().Errorf("failed restore storage from file %s: %v", config.SaverConfig.StorageFile, err)
+			}
+		}
+		// Init Saver
+		if config.SaverConfig.Interval == 0 {
+			memStorage.SetAutoSave()
+		} else {
+			saver := newSaver(memStorage, config.SaverConfig.Interval, logger)
+			app.services = append(app.services, saver)
+		}
+
+		storage = memStorage
+	}
 
 	// Init HTTP server
 	httpServer := humayHTTPServer.NewHTTPServer(config.HTTPConfig, logger, storage)
+	app.services = append(app.services, httpServer)
 
-	return &ServerApp{
-		logger: logger,
-		services: []Service{
-			httpServer,
-		},
-	}, nil
+	return app, nil
 }
 
 func NewAppFromFile(configFile string) (*ServerApp, error) {
@@ -75,18 +98,18 @@ func (a *ServerApp) Run(ctx context.Context) {
 		syscall.SIGQUIT,
 	)
 	for _, service := range a.services {
-		go func() {
+		go func(service Service) {
 			err := service.Start(ctx)
 			if err != nil {
-				a.logger.Sugar().Errorf("server not started: %w", err)
+				a.logger.Sugar().Errorf("service not started: %w", err)
 				a.StopAll(ctx)
 				return
 			}
-		}()
+		}(service)
 	}
 
 	stopSignal := <-sigChanel
-	a.logger.Debug(fmt.Sprintf("Stop by %v", stopSignal))
+	a.logger.Sugar().Debugf("Stop by %v", stopSignal)
 	a.StopAll(ctx)
 }
 

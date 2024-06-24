@@ -9,12 +9,15 @@ import (
 	"go.uber.org/zap"
 )
 
-type MemStorage interface {
+type Storage interface {
 	GetGaugeMetric(name string) (float64, error)
 	PutGaugeMetric(name string, value float64) error
 	GetCounterMetric(name string) (int64, error)
 	PutCounterMetric(name string, value int64) error
 	GetAllMetrics() map[string]map[string]string
+	CheckDBConnect() error
+	GetType() string
+	Close() error
 }
 
 type HTTPConfig struct {
@@ -28,19 +31,25 @@ type HTTPConfig struct {
 type HTTPServer struct {
 	server  *http.Server
 	logger  *zap.Logger
-	storage MemStorage
+	storage Storage
 }
 
 func NewHTTPServer(
 	config *HTTPConfig,
-	logger *zap.Logger,
-	storage MemStorage,
+	comlog *zap.Logger,
+	storage Storage,
 ) *HTTPServer {
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", config.Host, config.Port),
 		ReadTimeout:  time.Duration(config.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(config.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(config.IdleTimeout) * time.Second,
+	}
+
+	logger, err := initLogger(comlog)
+	if err != nil {
+		comlog.Sugar().Errorf("failed init http logger: %v", err)
+		logger = comlog
 	}
 
 	return &HTTPServer{
@@ -66,11 +75,34 @@ func (h *HTTPServer) Start(ctx context.Context) error {
 }
 
 func (h *HTTPServer) Stop(ctx context.Context) error {
+	defer h.logger.Sync()
 	err := h.server.Shutdown(ctx)
 	if err != nil {
 		h.logger.Sugar().Errorf("failed stop http server: %w", err)
 		return err
 	}
+	err = h.storage.Close()
+	if err != nil {
+		h.logger.Sugar().Errorf("failed close storage: %w", err)
+		return err
+	}
 
 	return nil
+}
+
+func initLogger(comlog *zap.Logger) (*zap.Logger, error) {
+	config := zap.Config{
+		Level:            zap.NewAtomicLevelAt(comlog.Level()),
+		Development:      true,
+		Encoding:         "json",
+		EncoderConfig:    zap.NewProductionEncoderConfig(),
+		OutputPaths:      []string{"stdout", "httpacc.log"},
+		ErrorOutputPaths: []string{"stderr", "httperr.log"},
+	}
+	logger, err := config.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return logger, nil
 }

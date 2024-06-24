@@ -19,6 +19,8 @@ import (
 type serverClient interface {
 	UpdateGauge(metricName string, metricValue float64) error
 	UpdateCounter(metricName string, metricValue int64) error
+	UpdateJSONGauge(metricName string, metricValue float64) error
+	UpdateJSONCounter(metricName string, metricValue int64) error
 	Stop()
 }
 
@@ -111,10 +113,10 @@ func (a *AgentApp) Run(ctx context.Context) {
 		case <-reportTicker.C:
 			func() {
 				for metricName, metricValue := range a.poller.Metrics.Gauge {
-					a.client.UpdateGauge(metricName, metricValue)
+					a.client.UpdateJSONGauge(metricName, metricValue)
 				}
 				for metricName, metricValue := range a.poller.Metrics.Counter {
-					a.client.UpdateCounter(metricName, metricValue)
+					a.client.UpdateJSONCounter(metricName, metricValue)
 				}
 				a.poller.FlushPollCount()
 			}()
