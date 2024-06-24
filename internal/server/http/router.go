@@ -23,7 +23,7 @@ func (h *HTTPServer) newRouter() chi.Router {
 
 	// ping handler.
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-		err := h.storage.CheckDBConnect(r.Context())
+		err := h.storage.CheckDBConnect()
 		if err != nil {
 			h.logger.Sugar().Errorf("absent db connect: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)

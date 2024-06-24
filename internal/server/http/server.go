@@ -9,13 +9,15 @@ import (
 	"go.uber.org/zap"
 )
 
-type MemStorage interface {
+type Storage interface {
 	GetGaugeMetric(name string) (float64, error)
 	PutGaugeMetric(name string, value float64) error
 	GetCounterMetric(name string) (int64, error)
 	PutCounterMetric(name string, value int64) error
 	GetAllMetrics() map[string]map[string]string
-	CheckDBConnect(context.Context) error
+	CheckDBConnect() error
+	GetType() string
+	Close() error
 }
 
 type HTTPConfig struct {
@@ -29,13 +31,13 @@ type HTTPConfig struct {
 type HTTPServer struct {
 	server  *http.Server
 	logger  *zap.Logger
-	storage MemStorage
+	storage Storage
 }
 
 func NewHTTPServer(
 	config *HTTPConfig,
 	comlog *zap.Logger,
-	storage MemStorage,
+	storage Storage,
 ) *HTTPServer {
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", config.Host, config.Port),
@@ -77,6 +79,11 @@ func (h *HTTPServer) Stop(ctx context.Context) error {
 	err := h.server.Shutdown(ctx)
 	if err != nil {
 		h.logger.Sugar().Errorf("failed stop http server: %w", err)
+		return err
+	}
+	err = h.storage.Close()
+	if err != nil {
+		h.logger.Sugar().Errorf("failed close storage: %w", err)
 		return err
 	}
 

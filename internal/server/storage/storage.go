@@ -39,6 +39,10 @@ func (s *MemStorage) SetAutoSave() {
 	s.autosave = true
 }
 
+func (s *MemStorage) Close() error {
+	return nil
+}
+
 func (s *MemStorage) GetGaugeMetric(name string) (value float64, err error) {
 	s.mx.RLock()
 	defer s.mx.RUnlock()
@@ -101,7 +105,8 @@ func (s *MemStorage) GetAllMetrics() map[string]map[string]string {
 	return metrics
 }
 
-func (s *MemStorage) CheckDBConnect(ctx context.Context) error {
+func (s *MemStorage) CheckDBConnect() error {
+	ctx := context.Background()
 	config, err := pgx.ParseConfig(s.dsn)
 	if err != nil {
 		return err

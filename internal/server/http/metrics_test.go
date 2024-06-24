@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockMemStorage struct{}
+type mockStorage struct{}
 
-func (m *mockMemStorage) GetGaugeMetric(name string) (value float64, err error) {
+func (m *mockStorage) GetGaugeMetric(name string) (value float64, err error) {
 	if name == "fail" {
 		err = errors.New("metric fail not found")
 		return
@@ -22,7 +22,7 @@ func (m *mockMemStorage) GetGaugeMetric(name string) (value float64, err error) 
 	return
 }
 
-func (m *mockMemStorage) PutGaugeMetric(name string, value float64) (err error) {
+func (m *mockStorage) PutGaugeMetric(name string, value float64) (err error) {
 	if name == "fail" {
 		err = errors.New("failed saved metric fail")
 		return
@@ -31,7 +31,7 @@ func (m *mockMemStorage) PutGaugeMetric(name string, value float64) (err error) 
 	return
 }
 
-func (m *mockMemStorage) GetCounterMetric(name string) (value int64, err error) {
+func (m *mockStorage) GetCounterMetric(name string) (value int64, err error) {
 	if name == "fail" {
 		err = errors.New("metric fail not found")
 		return
@@ -40,7 +40,7 @@ func (m *mockMemStorage) GetCounterMetric(name string) (value int64, err error) 
 	return
 }
 
-func (m *mockMemStorage) PutCounterMetric(name string, value int64) (err error) {
+func (m *mockStorage) PutCounterMetric(name string, value int64) (err error) {
 	if name == "fail" {
 		err = errors.New("failed saved metric fail")
 		return
@@ -49,16 +49,24 @@ func (m *mockMemStorage) PutCounterMetric(name string, value int64) (err error) 
 	return
 }
 
-func (m *mockMemStorage) GetAllMetrics() map[string]map[string]string {
+func (m *mockStorage) GetAllMetrics() map[string]map[string]string {
 	return nil
 }
 
-func (m *mockMemStorage) CheckDBConnect(ctx context.Context) error {
+func (m *mockStorage) CheckDBConnect() error {
 	return nil
+}
+
+func (m *mockStorage) Close() error {
+	return nil
+}
+
+func (s *mockStorage) GetType() string {
+	return "mock"
 }
 
 func TestPutValue(t *testing.T) {
-	storage := &mockMemStorage{}
+	storage := &mockStorage{}
 	server := &HTTPServer{
 		storage: storage,
 	}
@@ -115,7 +123,7 @@ func TestPutValue(t *testing.T) {
 }
 
 func TestGetValue(t *testing.T) {
-	storage := &mockMemStorage{}
+	storage := &mockStorage{}
 	server := &HTTPServer{
 		storage: storage,
 	}
