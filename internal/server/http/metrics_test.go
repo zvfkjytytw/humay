@@ -61,7 +61,7 @@ func (m *mockStorage) Close() error {
 	return nil
 }
 
-func (s *mockStorage) GetType() string {
+func (m *mockStorage) GetType() string {
 	return "mock"
 }
 
