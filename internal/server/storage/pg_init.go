@@ -15,32 +15,34 @@ const (
 )
 
 func (s *PGStorage) initDB() error {
-	if !(s.checkTableExist(counterTable) || s.checkTableExist(gaugeTable)) {
+	var initCommands []string
+
+	if !s.checkTableExist(counterTable) {
+		initCommands = append(initCommands, createCounterTableQuery)
+	}
+
+	if !s.checkTableExist(gaugeTable) {
+		initCommands = append(initCommands, createGaugeTableQuery)
+	}
+
+	if len(initCommands) > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		tx, err := s.dbConnect.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed begin init transaction: %v", err)
 		}
-
-		initCommands := []string{
-			// createMetricTypeQuery,
-			createGaugeTableQuery,
-			createCounterTableQuery,
-		}
-
-		s.checkTableExist(counterTable)
 
 		for _, command := range initCommands {
 			_, err := tx.Exec(command)
 			if err != nil {
-				_ = tx.Rollback()
-				return err
+				tx.Rollback()
+				return fmt.Errorf("failed init database: %v", err)
 			}
 		}
 
 		if err = tx.Commit(); err != nil {
-			return err
+			return fmt.Errorf("failed commit init transaction: %v", err)
 		}
 	}
 

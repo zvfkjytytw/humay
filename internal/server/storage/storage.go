@@ -127,3 +127,25 @@ func (s *MemStorage) CheckDBConnect() error {
 
 	return nil
 }
+
+func (s *MemStorage) PutGaugeMetrics(metrics map[string]float64) (err error) {
+	for name, value := range metrics {
+		err = s.PutGaugeMetric(name, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *MemStorage) PutCounterMetrics(metrics map[string]int64) (err error) {
+	for name, value := range metrics {
+		err = s.PutCounterMetric(name, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

@@ -20,14 +20,6 @@ type Number interface {
 	constraints.Integer | constraints.Float
 }
 
-// type PGStorageConfig struct {
-// 	Host     string `yaml:"host" json:"host"`
-// 	Port     int32  `yaml:"port" json:"port"`
-// 	Database string `yaml:"database" json:"database"`
-// 	User     string `yaml:"user" json:"user"`
-// 	Password string `yaml:"password" json:"password"`
-// }
-
 type PGStorage struct {
 	storageType string
 	dbConnect   *sql.DB
@@ -36,7 +28,7 @@ type PGStorage struct {
 func NewPGStorage(dsn string) (*PGStorage, error) {
 	db, err := sql.Open(postgresDriver, dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed create database connection: %v", err)
 	}
 
 	pgStorage := &PGStorage{
@@ -46,7 +38,7 @@ func NewPGStorage(dsn string) (*PGStorage, error) {
 
 	err = pgStorage.CheckDBConnect()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed connect to database: %v", err)
 	}
 
 	err = pgStorage.initDB()
@@ -72,13 +64,14 @@ func (s *PGStorage) Close() error {
 func (s *PGStorage) GetGaugeMetric(name string) (float64, error) {
 	sql, args, err := sq.Select("value").From(gaugeTable).Where(sq.Eq{"name": name}).PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed generate select query for metric %s: %v", name, err)
 	}
+
 	row := s.dbConnect.QueryRow(sql, args...)
 	var value float64
 	err = row.Scan(&value)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed select metric %s from database: %v", name, err)
 	}
 
 	return value, nil
@@ -96,13 +89,13 @@ func (s *PGStorage) PutGaugeMetric(name string, value float64) error {
 func (s *PGStorage) GetCounterMetric(name string) (int64, error) {
 	sql, args, err := sq.Select("value").From(counterTable).Where(sq.Eq{"name": name}).PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed generate select query for metric %s: %v", name, err)
 	}
 	row := s.dbConnect.QueryRow(sql, args...)
 	var value int64
 	err = row.Scan(&value)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed select metric %s from database: %v", name, err)
 	}
 
 	return value, nil
@@ -170,20 +163,32 @@ func (s *PGStorage) GetAllMetrics() map[string]map[string]string {
 func insertMetric[T Number](db *sql.DB, table, name string, value T) error {
 	sql, args, err := sq.Insert(table).Columns("name", "value").Values(name, value).PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed generate insert query: %v", err)
 	}
 
-	result, err := db.Exec(sql, args...)
+	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed init DB transaction: %v", err)
+	}
+
+	result, err := tx.Exec(sql, args...)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed execute insert query: %v", err)
 	}
 
 	n, err := result.RowsAffected()
 	if err != nil {
-		return err
+		tx.Rollback()
+		return fmt.Errorf("failed get count of the affected rows: %v", err)
 	}
 	if n != 1 {
-		return fmt.Errorf("affected %d rows", n)
+		tx.Rollback()
+		return fmt.Errorf("affected %d rows instead 1", n)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed commit query result: %v", err)
 	}
 
 	return nil
@@ -192,20 +197,30 @@ func insertMetric[T Number](db *sql.DB, table, name string, value T) error {
 func updateMetric[T Number](db *sql.DB, table, name string, value T) error {
 	sql, args, err := sq.Update(table).Set("value", value).Where(sq.Eq{"name": name}).PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed generate update query: %v", err)
 	}
 
-	result, err := db.Exec(sql, args...)
+	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed init DB transaction: %v", err)
+	}
+
+	result, err := tx.Exec(sql, args...)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed execute update query: %v", err)
 	}
 
 	n, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed get count of the affected rows: %v", err)
 	}
 	if n != 1 {
-		return fmt.Errorf("affected %d rows", n)
+		return fmt.Errorf("affected %d rows instead 1", n)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed commit query result: %v", err)
 	}
 
 	return nil

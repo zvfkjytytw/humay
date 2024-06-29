@@ -14,13 +14,17 @@ import (
 	agentHTTP "github.com/zvfkjytytw/humay/internal/agent/http"
 	metrics "github.com/zvfkjytytw/humay/internal/agent/metrics"
 	common "github.com/zvfkjytytw/humay/internal/common"
+	httpModels "github.com/zvfkjytytw/humay/internal/common/http/models"
 )
 
+const batchSize = 5
+
 type serverClient interface {
-	UpdateGauge(metricName string, metricValue float64) error
-	UpdateCounter(metricName string, metricValue int64) error
-	UpdateJSONGauge(metricName string, metricValue float64) error
-	UpdateJSONCounter(metricName string, metricValue int64) error
+	UpdateGauge(string, float64) error
+	UpdateCounter(string, int64) error
+	UpdateJSONGauge(string, float64) error
+	UpdateJSONCounter(string, int64) error
+	UpdateJSONMetrics([]*httpModels.Metric) error
 	Stop()
 }
 
@@ -111,15 +115,58 @@ func (a *AgentApp) Run(ctx context.Context) {
 		case <-pollTicker.C:
 			a.poller.Update()
 		case <-reportTicker.C:
-			func() {
-				for metricName, metricValue := range a.poller.Metrics.Gauge {
-					a.client.UpdateJSONGauge(metricName, metricValue)
-				}
-				for metricName, metricValue := range a.poller.Metrics.Counter {
-					a.client.UpdateJSONCounter(metricName, metricValue)
-				}
-				a.poller.FlushPollCount()
-			}()
+			a.batchReport()
+			// a.simpleReport()
 		}
+	}
+}
+
+func (a *AgentApp) simpleReport() {
+	defer a.poller.FlushPollCount()
+	for metricName, metricValue := range a.poller.Metrics.Gauge {
+		if err := a.client.UpdateJSONGauge(metricName, metricValue); err != nil {
+			a.logger.Sugar().Errorf("failed update gauge metric %s: %v", metricName, err)
+		}
+	}
+	for metricName, metricValue := range a.poller.Metrics.Counter {
+		if err := a.client.UpdateJSONCounter(metricName, metricValue); err != nil {
+			a.logger.Sugar().Errorf("failed update gauge metric %s: %v", metricName, err)
+		}
+	}
+}
+
+func (a *AgentApp) batchReport() {
+	defer a.poller.FlushPollCount()
+	var metrics []*httpModels.Metric
+	for metricName, metricValue := range a.poller.Metrics.Gauge {
+		metrics = append(
+			metrics,
+			&httpModels.Metric{
+				ID:    metricName,
+				MType: "gauge",
+				Value: &metricValue,
+			},
+		)
+	}
+	for metricName, metricValue := range a.poller.Metrics.Counter {
+		metrics = append(
+			metrics,
+			&httpModels.Metric{
+				ID:    metricName,
+				MType: "counter",
+				Delta: &metricValue,
+			},
+		)
+	}
+
+	limitIndex := batchSize * (len(metrics) / batchSize)
+	for i := 0; i < limitIndex; i += batchSize {
+		if err := a.client.UpdateJSONMetrics(metrics[i : i+batchSize]); err != nil {
+			a.logger.Sugar().Errorf("failed update metrics: %v", err)
+		}
+	}
+
+	if err := a.client.UpdateJSONMetrics(metrics[limitIndex:]); err != nil {
+		a.logger.Sugar().Errorf("failed update metrics: %v", err)
 	}
 }

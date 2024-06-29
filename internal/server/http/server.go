@@ -12,8 +12,10 @@ import (
 type Storage interface {
 	GetGaugeMetric(name string) (float64, error)
 	PutGaugeMetric(name string, value float64) error
+	PutGaugeMetrics(map[string]float64) error
 	GetCounterMetric(name string) (int64, error)
 	PutCounterMetric(name string, value int64) error
+	PutCounterMetrics(map[string]int64) error
 	GetAllMetrics() map[string]map[string]string
 	CheckDBConnect() error
 	GetType() string

@@ -65,6 +65,14 @@ func (m *mockStorage) GetType() string {
 	return "mock"
 }
 
+func (m *mockStorage) PutCounterMetrics(map[string]int64) (err error) {
+	return nil
+}
+
+func (m *mockStorage) PutGaugeMetrics(map[string]float64) (err error) {
+	return nil
+}
+
 func TestPutValue(t *testing.T) {
 	storage := &mockStorage{}
 	server := &HTTPServer{

@@ -1,0 +1,12 @@
+services:
+  db:
+    image: postgres:16.3
+    restart: always
+    environment:
+      POSTGRES_USER: humay
+      POSTGRES_PASSWORD: humay123
+      POSTGRES_DB: humay
+    volumes:
+      - ./data:/Users/lix0/garage/volumes/postgres/data
+    ports:
+      - 5432:5432
