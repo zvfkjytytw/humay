@@ -63,7 +63,7 @@ func jsonCtx(next http.Handler) http.Handler {
 			}
 		}
 
-		ctx := context.WithValue(r.Context(), contextMetricType, metric.MType)
+		ctx := context.WithValue(r.Context(), contextMetricType, strings.TrimSpace(metric.MType))
 		ctx = context.WithValue(ctx, contextMetricName, strings.TrimSpace(metric.ID))
 		ctx = context.WithValue(ctx, contextMetricValue, mValue)
 
@@ -205,11 +205,11 @@ func (h *HTTPServer) putJSONValues(w http.ResponseWriter, r *http.Request) {
 	counterMetrics := make(map[string]int64)
 
 	for _, metric := range metrics {
-		switch strings.ToLower(metric.MType) {
+		switch strings.ToLower(strings.TrimSpace(metric.MType)) {
 		case "gauge":
-			gaugeMetrics[metric.ID] = *metric.Value
+			gaugeMetrics[strings.TrimSpace(metric.ID)] = *metric.Value
 		case "counter":
-			counterMetrics[metric.ID] = *metric.Delta
+			counterMetrics[strings.TrimSpace(metric.ID)] = *metric.Delta
 		}
 	}
 
