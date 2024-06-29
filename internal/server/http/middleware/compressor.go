@@ -27,8 +27,7 @@ func Compressor() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cType := r.Header.Get("Content-Type")
 			if cType == "application/json" || cType == "text/html" {
-				switch r.Header.Get("Content-Encoding") {
-				case "gzip":
+				if strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 					gz, err := gzip.NewReader(r.Body)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)

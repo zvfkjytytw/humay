@@ -7,10 +7,12 @@ import (
 )
 
 func (s *MemStorage) Save() error {
+	s.mx.RLock()
 	buf, err := json.Marshal(s)
 	if err != nil {
 		return err
 	}
+	s.mx.RUnlock()
 
 	file, err := os.OpenFile(s.storageFile, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
