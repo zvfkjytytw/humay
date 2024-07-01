@@ -106,8 +106,8 @@ func (s *PGStorage) PutCounterMetric(name string, delta int64) error {
 	if err != nil {
 		return insertMetric(s.dbConnect, counterTable, name, delta)
 	}
-
-	return updateMetric(s.dbConnect, counterTable, name, value+delta)
+	newCounter := value + delta
+	return updateMetric(s.dbConnect, counterTable, name, newCounter)
 }
 
 func (s *PGStorage) GetAllMetrics() map[string]map[string]string {
