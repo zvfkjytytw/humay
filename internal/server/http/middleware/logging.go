@@ -62,6 +62,10 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 			}
 
 			next.ServeHTTP(lw, r)
+			storageType, ok := lw.Header()["Storage-Type"]
+			if !ok {
+				storageType = []string{"undefined"}
+			}
 
 			rDuration := time.Since(start).Nanoseconds()
 			logger.Info(
@@ -76,6 +80,7 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 				zap.Int("Response Code", lw.responseData.statusCode),
 				zap.Int("Response Length", lw.responseData.answerSize),
 				zap.String("Response Body", lw.responseData.answerBody), // for debug
+				zap.String("Storage-Type", storageType[0]),              // for debug
 			)
 		})
 	}
