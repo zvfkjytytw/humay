@@ -51,7 +51,7 @@ func (s *MemStorage) GetGaugeMetric(name string) (value float64, err error) {
 		err = fmt.Errorf("metric %s is not found", name)
 	}
 
-	return value, err
+	return value, nil
 }
 
 func (s *MemStorage) PutGaugeMetric(name string, value float64) (err error) {
@@ -62,7 +62,7 @@ func (s *MemStorage) PutGaugeMetric(name string, value float64) (err error) {
 		s.Save()
 	}
 
-	return err
+	return nil
 }
 
 func (s *MemStorage) GetCounterMetric(name string) (value int64, err error) {
@@ -73,7 +73,7 @@ func (s *MemStorage) GetCounterMetric(name string) (value int64, err error) {
 		err = fmt.Errorf("metric %s not found", name)
 	}
 
-	return value, err
+	return value, nil
 }
 
 func (s *MemStorage) PutCounterMetric(name string, value int64) (err error) {
@@ -84,7 +84,7 @@ func (s *MemStorage) PutCounterMetric(name string, value int64) (err error) {
 		s.Save()
 	}
 
-	return err
+	return nil
 }
 
 func (s *MemStorage) GetAllMetrics() map[string]map[string]string {
