@@ -61,9 +61,19 @@ func (s *PGStorage) PutCounterMetrics(metrics map[string]int64) (err error) {
 
 	for name, delta := range metrics {
 		if value, err := s.GetCounterMetric(name); err != nil {
-			forInsert[name] = delta
+			d, ok := forInsert[name]
+			if ok {
+				forInsert[name] = d + delta
+			} else {
+				forInsert[name] = delta
+			}
 		} else {
-			forUpdate[name] = value + delta
+			d, ok := forUpdate[name]
+			if ok {
+				forUpdate[name] = d + delta
+			} else {
+				forUpdate[name] = value + delta
+			}
 		}
 	}
 
