@@ -305,7 +305,12 @@ func (h *HTTPServer) putJSONValues(w http.ResponseWriter, r *http.Request) {
 		case "gauge":
 			gaugeMetrics[strings.TrimSpace(metric.ID)] = *metric.Value
 		case "counter":
-			counterMetrics[strings.TrimSpace(metric.ID)] = *metric.Delta
+			delta, ok := counterMetrics[strings.TrimSpace(metric.ID)]
+			if ok {
+				counterMetrics[strings.TrimSpace(metric.ID)] = delta + *metric.Delta
+			} else {
+				counterMetrics[strings.TrimSpace(metric.ID)] = *metric.Delta
+			}
 		}
 	}
 
