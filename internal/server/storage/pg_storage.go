@@ -1,12 +1,15 @@
 package humaystorage
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strconv"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	_ "github.com/lib/pq"
+	"github.com/sethvargo/go-retry"
 	"golang.org/x/exp/constraints"
 )
 
@@ -14,6 +17,7 @@ const (
 	postgresDriver = "postgres"
 	counterTable   = "counter_metrics"
 	gaugeTable     = "gauge_metrics"
+	queryTimeout   = 5 * time.Second
 )
 
 type Number interface {
@@ -161,66 +165,106 @@ func (s *PGStorage) GetAllMetrics() map[string]map[string]string {
 }
 
 func insertMetric[T Number](db *sql.DB, table, name string, value T) error {
-	sql, args, err := sq.Insert(table).Columns("name", "value").Values(name, value).PlaceholderFormat(sq.Dollar).ToSql()
-	if err != nil {
-		return fmt.Errorf("failed generate insert query: %v", err)
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancel()
+	backoff := retry.WithMaxRetries(
+		maxRetries,
+		retry.WithCappedDuration(
+			expectIncrease,
+			retry.NewFibonacci(startExpect),
+		),
+	)
 
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("failed init DB transaction: %v", err)
-	}
+	if err := retry.Do(
+		ctx,
+		backoff,
+		func(ctx context.Context) error {
+			sql, args, err := sq.Insert(table).Columns("name", "value").Values(name, value).PlaceholderFormat(sq.Dollar).ToSql()
+			if err != nil {
+				return fmt.Errorf("failed generate insert query: %v", err)
+			}
 
-	result, err := tx.Exec(sql, args...)
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed execute insert query: %v", err)
-	}
+			tx, err := db.Begin()
+			if err != nil {
+				return fmt.Errorf("failed init DB transaction: %v", err)
+			}
 
-	n, err := result.RowsAffected()
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed get count of the affected rows: %v", err)
-	}
-	if n != 1 {
-		tx.Rollback()
-		return fmt.Errorf("affected %d rows instead 1", n)
-	}
+			result, err := tx.Exec(sql, args...)
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed execute insert query: %v", err)
+			}
 
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed commit query result: %v", err)
+			n, err := result.RowsAffected()
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed get count of the affected rows: %v", err)
+			}
+			if n != 1 {
+				tx.Rollback()
+				return fmt.Errorf("affected %d rows instead 1", n)
+			}
+
+			if err = tx.Commit(); err != nil {
+				return fmt.Errorf("failed commit query result: %v", err)
+			}
+
+			return nil
+		},
+	); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func updateMetric[T Number](db *sql.DB, table, name string, value T) error {
-	sql, args, err := sq.Update(table).Set("value", value).Where(sq.Eq{"name": name}).PlaceholderFormat(sq.Dollar).ToSql()
-	if err != nil {
-		return fmt.Errorf("failed generate update query: %v", err)
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancel()
+	backoff := retry.WithMaxRetries(
+		maxRetries,
+		retry.WithCappedDuration(
+			expectIncrease,
+			retry.NewFibonacci(startExpect),
+		),
+	)
 
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("failed init DB transaction: %v", err)
-	}
+	if err := retry.Do(
+		ctx,
+		backoff,
+		func(ctx context.Context) error {
+			sql, args, err := sq.Update(table).Set("value", value).Where(sq.Eq{"name": name}).PlaceholderFormat(sq.Dollar).ToSql()
+			if err != nil {
+				return fmt.Errorf("failed generate update query: %v", err)
+			}
 
-	result, err := tx.Exec(sql, args...)
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed execute update query: %v", err)
-	}
+			tx, err := db.Begin()
+			if err != nil {
+				return fmt.Errorf("failed init DB transaction: %v", err)
+			}
 
-	n, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed get count of the affected rows: %v", err)
-	}
-	if n != 1 {
-		return fmt.Errorf("affected %d rows instead 1", n)
-	}
+			result, err := tx.Exec(sql, args...)
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed execute update query: %v", err)
+			}
 
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed commit query result: %v", err)
+			n, err := result.RowsAffected()
+			if err != nil {
+				return fmt.Errorf("failed get count of the affected rows: %v", err)
+			}
+			if n != 1 {
+				return fmt.Errorf("affected %d rows instead 1", n)
+			}
+
+			if err = tx.Commit(); err != nil {
+				return fmt.Errorf("failed commit query result: %v", err)
+			}
+
+			return nil
+		},
+	); err != nil {
+		return err
 	}
 
 	return nil

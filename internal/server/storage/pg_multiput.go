@@ -1,9 +1,12 @@
 package humaystorage
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
+
+	"github.com/sethvargo/go-retry"
 )
 
 const (
@@ -85,41 +88,61 @@ func (s *PGStorage) PutCounterMetrics(metrics map[string]int64) (err error) {
 }
 
 func putMetrics[T Number](db *sql.DB, table, query string, metrics map[string]T) error {
-	i := 1
-	metricsLen := len(metrics)
-	args := make([]any, 0, 2*metricsLen)
-	values := make([]string, 0, metricsLen)
+	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancel()
+	backoff := retry.WithMaxRetries(
+		maxRetries,
+		retry.WithCappedDuration(
+			expectIncrease,
+			retry.NewFibonacci(startExpect),
+		),
+	)
 
-	for name, value := range metrics {
-		values = append(values, fmt.Sprintf("($%d, $%d::%s)", i, i+1, valueType[table]))
-		args = append(args, name, value)
-		i += 2
-	}
-	sql := fmt.Sprintf(query, table, strings.Join(values, ","))
+	if err := retry.Do(
+		ctx,
+		backoff,
+		func(ctx context.Context) error {
+			i := 1
+			metricsLen := len(metrics)
+			args := make([]any, 0, 2*metricsLen)
+			values := make([]string, 0, metricsLen)
 
-	tx, err := db.Begin()
-	if err != nil {
-		return fmt.Errorf("failed init DB transaction: %v", err)
-	}
+			for name, value := range metrics {
+				values = append(values, fmt.Sprintf("($%d, $%d::%s)", i, i+1, valueType[table]))
+				args = append(args, name, value)
+				i += 2
+			}
+			sql := fmt.Sprintf(query, table, strings.Join(values, ","))
 
-	result, err := tx.Exec(sql, args...)
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed execute query: %v", err)
-	}
+			tx, err := db.Begin()
+			if err != nil {
+				return fmt.Errorf("failed init DB transaction: %v", err)
+			}
 
-	n, err := result.RowsAffected()
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed get count of the affected rows: %v", err)
-	}
-	if n != int64(metricsLen) {
-		tx.Rollback()
-		return fmt.Errorf("affected %d rows instead %d", n, metricsLen)
-	}
+			result, err := tx.Exec(sql, args...)
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed execute query: %v", err)
+			}
 
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed commit query result: %v", err)
+			n, err := result.RowsAffected()
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed get count of the affected rows: %v", err)
+			}
+			if n != int64(metricsLen) {
+				tx.Rollback()
+				return fmt.Errorf("affected %d rows instead %d", n, metricsLen)
+			}
+
+			if err = tx.Commit(); err != nil {
+				return fmt.Errorf("failed commit query result: %v", err)
+			}
+
+			return nil
+		},
+	); err != nil {
+		return err
 	}
 
 	return nil

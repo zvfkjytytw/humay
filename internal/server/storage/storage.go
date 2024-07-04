@@ -55,12 +55,14 @@ func (s *MemStorage) GetGaugeMetric(name string) (value float64, err error) {
 }
 
 func (s *MemStorage) PutGaugeMetric(name string, value float64) (err error) {
+	defer func() {
+		if s.autosave {
+			s.Save()
+		}
+	}()
 	s.mx.Lock()
 	defer s.mx.Unlock()
 	s.GaugeMetrics[name] = value
-	if s.autosave {
-		s.Save()
-	}
 
 	return
 }
@@ -77,12 +79,14 @@ func (s *MemStorage) GetCounterMetric(name string) (value int64, err error) {
 }
 
 func (s *MemStorage) PutCounterMetric(name string, value int64) (err error) {
+	defer func() {
+		if s.autosave {
+			s.Save()
+		}
+	}()
 	s.mx.Lock()
 	defer s.mx.Unlock()
 	s.CounterMetrics[name] = s.CounterMetrics[name] + value
-	if s.autosave {
-		s.Save()
-	}
 
 	return
 }
