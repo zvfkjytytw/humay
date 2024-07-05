@@ -36,7 +36,7 @@ func (h *HTTPServer) newRouter() chi.Router {
 
 	// handler for update metric in text/plain content-type.
 	r.Route("/update/{metricType}/{metricName}/{metricValue}", func(r chi.Router) {
-		r.Use(updateCtx)
+		// r.Use(updateCtx)
 		r.Post("/", h.putValue)
 		r.Get("/", notImplementedYet)
 	})

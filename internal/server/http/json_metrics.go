@@ -1,115 +1,114 @@
 package humayhttpserver
 
 import (
-	"context"
+	// "context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
+	// "strconv"
 	"strings"
 
 	httpModels "github.com/zvfkjytytw/humay/internal/common/http/models"
 )
 
-// middleware for checking request condition and correctness of the body.
-func jsonCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contentType, ok := r.Header["Content-Type"]
-		if !ok || contentType[0] != "application/json" {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("wrong Content-Type. Expect application/json"))
-			return
-		}
+// // middleware for checking request condition and correctness of the body.
+// func jsonCtx(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		contentType, ok := r.Header["Content-Type"]
+// 		if !ok || contentType[0] != "application/json" {
+// 			w.WriteHeader(http.StatusBadRequest)
+// 			w.Write([]byte("wrong Content-Type. Expect application/json"))
+// 			return
+// 		}
 
-		defer r.Body.Close()
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("failed read body"))
-			return
-		}
+// 		defer r.Body.Close()
+// 		body, err := io.ReadAll(r.Body)
+// 		if err != nil {
+// 			w.WriteHeader(http.StatusBadRequest)
+// 			w.Write([]byte("failed read body"))
+// 			return
+// 		}
 
-		metric := &httpModels.Metric{}
-		err = json.Unmarshal(body, metric)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("failed unmarshal body"))
-			return
-		}
+// 		metric := &httpModels.Metric{}
+// 		err = json.Unmarshal(body, metric)
+// 		if err != nil {
+// 			w.WriteHeader(http.StatusBadRequest)
+// 			w.Write([]byte("failed unmarshal body"))
+// 			return
+// 		}
 
-		if !checkMetricType(metric.MType) {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(fmt.Sprintf("wrong metric type %s", metric.MType)))
-			return
-		}
+// 		if !checkMetricType(metric.MType) {
+// 			w.WriteHeader(http.StatusBadRequest)
+// 			w.Write([]byte(fmt.Sprintf("wrong metric type %s", metric.MType)))
+// 			return
+// 		}
 
-		var mValue string
-		if r.RequestURI == httpModels.UpdateHandler {
-			switch metric.MType {
-			case httpModels.GaugeMetric:
-				if metric.Value == nil {
-					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte("not specified gauge value"))
-					return
-				}
-				mValue = strconv.FormatFloat(*metric.Value, 'f', -1, 64)
-			case httpModels.CounterMetric:
-				if metric.Delta == nil {
-					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte("not specified counter delta"))
-					return
-				}
-				mValue = strconv.FormatInt(*metric.Delta, 10)
-			}
-		}
+// 		var mValue string
+// 		if r.RequestURI == httpModels.UpdateHandler {
+// 			switch metric.MType {
+// 			case httpModels.GaugeMetric:
+// 				if metric.Value == nil {
+// 					w.WriteHeader(http.StatusBadRequest)
+// 					w.Write([]byte("not specified gauge value"))
+// 					return
+// 				}
+// 				mValue = strconv.FormatFloat(*metric.Value, 'f', -1, 64)
+// 			case httpModels.CounterMetric:
+// 				if metric.Delta == nil {
+// 					w.WriteHeader(http.StatusBadRequest)
+// 					w.Write([]byte("not specified counter delta"))
+// 					return
+// 				}
+// 				mValue = strconv.FormatInt(*metric.Delta, 10)
+// 			}
+// 		}
 
-		ctx := context.WithValue(r.Context(), contextMetricType, strings.TrimSpace(metric.MType))
-		ctx = context.WithValue(ctx, contextMetricName, strings.TrimSpace(metric.ID))
-		ctx = context.WithValue(ctx, contextMetricValue, mValue)
+// 		ctx := context.WithValue(r.Context(), contextMetricType, strings.TrimSpace(metric.MType))
+// 		ctx = context.WithValue(ctx, contextMetricName, strings.TrimSpace(metric.ID))
+// 		ctx = context.WithValue(ctx, contextMetricValue, mValue)
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-		// next.ServeHTTP(w, r)
-	})
-}
+// 		next.ServeHTTP(w, r.WithContext(ctx))
+// 		// next.ServeHTTP(w, r)
+// 	})
+// }
 
 // return metric structure with the actual value from the storage.
 func (h *HTTPServer) getJSONValue(w http.ResponseWriter, r *http.Request) {
-	metricType := fmt.Sprintf("%v", r.Context().Value(contextMetricType))
-	metricName := fmt.Sprintf("%v", r.Context().Value(contextMetricName))
+	// metricType := fmt.Sprintf("%v", r.Context().Value(contextMetricType))
+	// metricName := fmt.Sprintf("%v", r.Context().Value(contextMetricName))
 
-	// start parsing request body.
-	// contentType, ok := r.Header["Content-Type"]
-	// if !ok || contentType[0] != "application/json" {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("wrong Content-Type. Expect application/json"))
-	// 	return
-	// }
+	// parsing request body.
+	contentType, ok := r.Header["Content-Type"]
+	if !ok || contentType[0] != "application/json" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("wrong Content-Type. Expect application/json"))
+		return
+	}
 
-	// defer r.Body.Close()
-	// requestBody, err := io.ReadAll(r.Body)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("failed read body"))
-	// 	return
-	// }
+	defer r.Body.Close()
+	requestBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("failed read body"))
+		return
+	}
 
-	// requestMetric := &httpModels.Metric{}
-	// err = json.Unmarshal(requestBody, requestMetric)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("failed unmarshal body"))
-	// 	return
-	// }
+	requestMetric := &httpModels.Metric{}
+	err = json.Unmarshal(requestBody, requestMetric)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("failed unmarshal body"))
+		return
+	}
 
-	// metricType := requestMetric.MType
-	// metricName := requestMetric.ID
-	// if !checkMetricType(metricType) {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte(fmt.Sprintf("wrong metric type %s", metricType)))
-	// 	return
-	// }
-	// end parsing request body.
+	metricType := requestMetric.MType
+	metricName := requestMetric.ID
+	if !checkMetricType(metricType) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("wrong metric type %s", metricType)))
+		return
+	}
 
 	metric, err := h.getMetricStruct(metricType, metricName)
 	if err != nil {
@@ -133,68 +132,14 @@ func (h *HTTPServer) getJSONValue(w http.ResponseWriter, r *http.Request) {
 
 // save metric with the name and value from the request Body to the storage.
 func (h *HTTPServer) putJSONValue(w http.ResponseWriter, r *http.Request) {
-	metricType := fmt.Sprintf("%v", r.Context().Value(contextMetricType))
-	metricName := fmt.Sprintf("%v", r.Context().Value(contextMetricName))
-	metricValue := fmt.Sprintf("%v", r.Context().Value(contextMetricValue))
+	// metricType := fmt.Sprintf("%v", r.Context().Value(contextMetricType))
+	// metricName := fmt.Sprintf("%v", r.Context().Value(contextMetricName))
+	// metricValue := fmt.Sprintf("%v", r.Context().Value(contextMetricValue))
 
-	switch metricType {
-	case httpModels.GaugeMetric:
-		value, _ := strconv.ParseFloat(metricValue, 64) //nolint // wraped in middleware
-		err := h.storage.PutGaugeMetric(metricName, value)
-		if err != nil {
-			h.logger.Sugar().Errorf("failed save %s metric %s: %w", httpModels.GaugeMetric, metricName, err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("failed save metric"))
-			return
-		}
-
-	case httpModels.CounterMetric:
-		value, _ := strconv.ParseInt(metricValue, 10, 64) //nolint // wraped in middleware
-		err := h.storage.PutCounterMetric(metricName, value)
-		if err != nil {
-			h.logger.Sugar().Errorf("failed save %s metric %s: %w", httpModels.CounterMetric, metricName, err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("failed save metric"))
-			return
-		}
-	}
-
-	// parse request body.
-	// contentType, ok := r.Header["Content-Type"]
-	// if !ok || contentType[0] != "application/json" {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("wrong Content-Type. Expect application/json"))
-	// 	return
-	// }
-
-	// defer r.Body.Close()
-	// requestBody, err := io.ReadAll(r.Body)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("failed read body"))
-	// 	return
-	// }
-
-	// requestMetric := &httpModels.Metric{}
-	// err = json.Unmarshal(requestBody, requestMetric)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("failed unmarshal body"))
-	// 	return
-	// }
-
-	// metricType := requestMetric.MType
-	// metricName := requestMetric.ID
-	// if !checkMetricType(metricType) {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte(fmt.Sprintf("wrong metric type %s", metricType)))
-	// 	return
-	// }
-
-	// save metric.
 	// switch metricType {
 	// case httpModels.GaugeMetric:
-	// 	err := h.storage.PutGaugeMetric(metricName, *requestMetric.Value)
+	// 	value, _ := strconv.ParseFloat(metricValue, 64) //nolint // wraped in middleware
+	// 	err := h.storage.PutGaugeMetric(metricName, value)
 	// 	if err != nil {
 	// 		h.logger.Sugar().Errorf("failed save %s metric %s: %w", httpModels.GaugeMetric, metricName, err)
 	// 		w.WriteHeader(http.StatusInternalServerError)
@@ -203,7 +148,8 @@ func (h *HTTPServer) putJSONValue(w http.ResponseWriter, r *http.Request) {
 	// 	}
 
 	// case httpModels.CounterMetric:
-	// 	err := h.storage.PutCounterMetric(metricName, *requestMetric.Delta)
+	// 	value, _ := strconv.ParseInt(metricValue, 10, 64) //nolint // wraped in middleware
+	// 	err := h.storage.PutCounterMetric(metricName, value)
 	// 	if err != nil {
 	// 		h.logger.Sugar().Errorf("failed save %s metric %s: %w", httpModels.CounterMetric, metricName, err)
 	// 		w.WriteHeader(http.StatusInternalServerError)
@@ -212,8 +158,61 @@ func (h *HTTPServer) putJSONValue(w http.ResponseWriter, r *http.Request) {
 	// 	}
 	// }
 
+	// parse request body.
+	contentType, ok := r.Header["Content-Type"]
+	if !ok || contentType[0] != "application/json" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("wrong Content-Type. Expect application/json"))
+		return
+	}
+
+	defer r.Body.Close()
+	requestBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("failed read body"))
+		return
+	}
+
+	requestMetric := &httpModels.Metric{}
+	err = json.Unmarshal(requestBody, requestMetric)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("failed unmarshal body"))
+		return
+	}
+
+	metricType := requestMetric.MType
+	metricName := requestMetric.ID
+	if !checkMetricType(metricType) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("wrong metric type %s", metricType)))
+		return
+	}
+
+	// save metric.
+	switch metricType {
+	case httpModels.GaugeMetric:
+		err := h.storage.PutGaugeMetric(metricName, *requestMetric.Value)
+		if err != nil {
+			h.logger.Sugar().Errorf("failed save %s metric %s: %w", httpModels.GaugeMetric, metricName, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("failed save metric"))
+			return
+		}
+
+	case httpModels.CounterMetric:
+		err := h.storage.PutCounterMetric(metricName, *requestMetric.Delta)
+		if err != nil {
+			h.logger.Sugar().Errorf("failed save %s metric %s: %w", httpModels.CounterMetric, metricName, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("failed save metric"))
+			return
+		}
+	}
+
 	// return saved metric.
-	metric, err := h.getMetricStruct(metricType, metricName) //nolint // this metric just saved
+	metric, err := h.getMetricStruct(metricType, metricName)
 	if err != nil {
 		h.logger.Sugar().Errorf("failed get metric %s: %w", metricName, err)
 		w.WriteHeader(http.StatusInternalServerError)
