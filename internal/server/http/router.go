@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	httpModels "github.com/zvfkjytytw/humay/internal/common/http/models"
 	hm "github.com/zvfkjytytw/humay/internal/server/http/middleware"
 )
 
@@ -23,6 +24,12 @@ func (h *HTTPServer) newRouter() chi.Router {
 
 	// ping handler.
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		err := h.storage.CheckDBConnect()
+		if err != nil {
+			h.logger.Sugar().Errorf("absent db connect: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("pong"))
 	})
@@ -43,10 +50,13 @@ func (h *HTTPServer) newRouter() chi.Router {
 
 	// handlers for application/json content-type.
 	r.Group(func(r chi.Router) {
-		r.Use(jsonCtx)
-		r.Post("/update", h.putJSONValue)
-		r.Post("/value", h.getJSONValue)
+		// r.Use(jsonCtx)
+		r.Post(httpModels.UpdateHandler, h.putJSONValue)
+		r.Post(httpModels.ValueHandler, h.getJSONValue)
 	})
+
+	// handler for saving many metrics
+	r.Post(httpModels.UpdatesHandler, h.putJSONValues)
 
 	// stubs.
 	r.Get("/*", notImplementedYet)

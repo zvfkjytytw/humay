@@ -43,8 +43,6 @@ func (s *PGStorage) initDB() error {
 			}
 
 			if len(initCommands) > 0 {
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				defer cancel()
 				tx, err := s.dbConnect.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 				if err != nil {
 					return fmt.Errorf("failed begin init transaction: %v", err)
