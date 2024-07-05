@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -215,7 +216,11 @@ func (h *HTTPClient) UpdateJSONMetrics(metrics []*httpModels.Metric) error {
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("metrics not saved")
+				bodyBytes, err := io.ReadAll(resp.Body)
+				if err != nil {
+					h.logger.Sugar().Errorf("failed read response body: %v", err)
+				}
+				return fmt.Errorf("metrics not saved: %s", string(bodyBytes))
 			}
 			return nil
 		},
