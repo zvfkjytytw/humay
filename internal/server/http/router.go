@@ -36,7 +36,7 @@ func (h *HTTPServer) newRouter() chi.Router {
 
 	// handler for update metric in text/plain content-type.
 	r.Route("/update/{metricType}/{metricName}/{metricValue}", func(r chi.Router) {
-		// r.Use(updateCtx)
+		r.Use(updateCtx)
 		r.Post("/", h.putValue)
 		r.Get("/", notImplementedYet)
 	})
@@ -50,7 +50,7 @@ func (h *HTTPServer) newRouter() chi.Router {
 
 	// handlers for application/json content-type.
 	r.Group(func(r chi.Router) {
-		r.Use(jsonCtx)
+		// r.Use(jsonCtx)
 		r.Post(httpModels.UpdateHandler, h.putJSONValue)
 		r.Post(httpModels.ValueHandler, h.getJSONValue)
 	})

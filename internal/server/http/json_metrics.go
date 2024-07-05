@@ -229,7 +229,6 @@ func (h *HTTPServer) putJSONValue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Storage-Type", h.storage.GetType())
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
