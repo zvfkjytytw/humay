@@ -2,6 +2,7 @@ package humayserver
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -19,6 +20,7 @@ type saver struct {
 	storage  *humayStorage.MemStorage
 	interval int32
 	done     chan struct{}
+	once     sync.Once
 	logger   *zap.Logger
 }
 
@@ -55,6 +57,10 @@ func (s *saver) Start(ctx context.Context) error {
 }
 
 func (s *saver) Stop(ctx context.Context) error {
-	close(s.done)
+	s.once.Do(
+		func() {
+			close(s.done)
+		},
+	)
 	return nil
 }
