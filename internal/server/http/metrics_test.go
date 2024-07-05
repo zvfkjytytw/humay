@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockStorage struct{}
+type mockMemStorage struct{}
 
-func (m *mockStorage) GetGaugeMetric(name string) (value float64, err error) {
+func (m *mockMemStorage) GetGaugeMetric(name string) (value float64, err error) {
 	if name == "fail" {
 		err = errors.New("metric fail not found")
 		return
@@ -22,7 +22,7 @@ func (m *mockStorage) GetGaugeMetric(name string) (value float64, err error) {
 	return
 }
 
-func (m *mockStorage) PutGaugeMetric(name string, value float64) (err error) {
+func (m *mockMemStorage) PutGaugeMetric(name string, value float64) (err error) {
 	if name == "fail" {
 		err = errors.New("failed saved metric fail")
 		return
@@ -31,7 +31,7 @@ func (m *mockStorage) PutGaugeMetric(name string, value float64) (err error) {
 	return
 }
 
-func (m *mockStorage) GetCounterMetric(name string) (value int64, err error) {
+func (m *mockMemStorage) GetCounterMetric(name string) (value int64, err error) {
 	if name == "fail" {
 		err = errors.New("metric fail not found")
 		return
@@ -40,7 +40,7 @@ func (m *mockStorage) GetCounterMetric(name string) (value int64, err error) {
 	return
 }
 
-func (m *mockStorage) PutCounterMetric(name string, value int64) (err error) {
+func (m *mockMemStorage) PutCounterMetric(name string, value int64) (err error) {
 	if name == "fail" {
 		err = errors.New("failed saved metric fail")
 		return
@@ -49,32 +49,12 @@ func (m *mockStorage) PutCounterMetric(name string, value int64) (err error) {
 	return
 }
 
-func (m *mockStorage) GetAllMetrics() map[string]map[string]string {
-	return nil
-}
-
-func (m *mockStorage) CheckDBConnect() error {
-	return nil
-}
-
-func (m *mockStorage) Close() error {
-	return nil
-}
-
-func (m *mockStorage) GetType() string {
-	return "mock"
-}
-
-func (m *mockStorage) PutCounterMetrics(map[string]int64) (err error) {
-	return nil
-}
-
-func (m *mockStorage) PutGaugeMetrics(map[string]float64) (err error) {
+func (m *mockMemStorage) GetAllMetrics() map[string]map[string]string {
 	return nil
 }
 
 func TestPutValue(t *testing.T) {
-	storage := &mockStorage{}
+	storage := &mockMemStorage{}
 	server := &HTTPServer{
 		storage: storage,
 	}
@@ -131,7 +111,7 @@ func TestPutValue(t *testing.T) {
 }
 
 func TestGetValue(t *testing.T) {
-	storage := &mockStorage{}
+	storage := &mockMemStorage{}
 	server := &HTTPServer{
 		storage: storage,
 	}

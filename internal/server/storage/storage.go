@@ -1,13 +1,9 @@
 package humaystorage
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"sync"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type MemStorage struct {
@@ -17,17 +13,15 @@ type MemStorage struct {
 	storageFile    string
 	GaugeMetrics   map[string]float64 `json:"gauge_metrics,omitempty"`
 	CounterMetrics map[string]int64   `json:"counter_metrics,omitempty"`
-	dsn            string
 }
 
-func NewStorage(storageFile string, dsn string) *MemStorage {
+func NewStorage(storageFile string) *MemStorage {
 	return &MemStorage{
 		autosave:       false,
 		storageType:    "struct",
 		storageFile:    storageFile,
 		GaugeMetrics:   make(map[string]float64),
 		CounterMetrics: make(map[string]int64),
-		dsn:            dsn,
 	}
 }
 
@@ -37,10 +31,6 @@ func (s *MemStorage) GetType() string {
 
 func (s *MemStorage) SetAutoSave() {
 	s.autosave = true
-}
-
-func (s *MemStorage) Close() error {
-	return nil
 }
 
 func (s *MemStorage) GetGaugeMetric(name string) (value float64, err error) {
@@ -107,49 +97,4 @@ func (s *MemStorage) GetAllMetrics() map[string]map[string]string {
 	}
 
 	return metrics
-}
-
-func (s *MemStorage) CheckDBConnect() error {
-	ctx := context.Background()
-	config, err := pgx.ParseConfig(s.dsn)
-	if err != nil {
-		return err
-	}
-	config.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
-
-	conn, err := pgxpool.New(ctx, config.ConnString())
-	fmt.Println(s.dsn)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	err = conn.Ping(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *MemStorage) PutGaugeMetrics(metrics map[string]float64) (err error) {
-	for name, value := range metrics {
-		err = s.PutGaugeMetric(name, value)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *MemStorage) PutCounterMetrics(metrics map[string]int64) (err error) {
-	for name, value := range metrics {
-		err = s.PutCounterMetric(name, value)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
