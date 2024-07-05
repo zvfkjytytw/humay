@@ -33,7 +33,7 @@ type HTTPServer struct {
 
 func NewHTTPServer(
 	config *HTTPConfig,
-	logger *zap.Logger,
+	comlog *zap.Logger,
 	storage MemStorage,
 ) *HTTPServer {
 	server := &http.Server{
@@ -41,6 +41,12 @@ func NewHTTPServer(
 		ReadTimeout:  time.Duration(config.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(config.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(config.IdleTimeout) * time.Second,
+	}
+
+	logger, err := initLogger(comlog)
+	if err != nil {
+		comlog.Sugar().Errorf("failed init http logger: %v", err)
+		logger = comlog
 	}
 
 	return &HTTPServer{
@@ -66,6 +72,7 @@ func (h *HTTPServer) Start(ctx context.Context) error {
 }
 
 func (h *HTTPServer) Stop(ctx context.Context) error {
+	defer h.logger.Sync()
 	err := h.server.Shutdown(ctx)
 	if err != nil {
 		h.logger.Sugar().Errorf("failed stop http server: %w", err)
@@ -73,4 +80,21 @@ func (h *HTTPServer) Stop(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func initLogger(comlog *zap.Logger) (*zap.Logger, error) {
+	config := zap.Config{
+		Level:            zap.NewAtomicLevelAt(comlog.Level()),
+		Development:      true,
+		Encoding:         "json",
+		EncoderConfig:    zap.NewProductionEncoderConfig(),
+		OutputPaths:      []string{"stdout", "httpacc.log"},
+		ErrorOutputPaths: []string{"stderr", "httperr.log"},
+	}
+	logger, err := config.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return logger, nil
 }

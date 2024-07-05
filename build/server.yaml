@@ -4,3 +4,7 @@ http_config:
     read_timeout: 5
     write_timeout: 10
     idle_timeout: 20
+saver_config:
+    interval: 300
+    storage_file: /tmp/metrics-db.json
+    restore: false
