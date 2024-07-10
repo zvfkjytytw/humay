@@ -8,3 +8,10 @@ saver_config:
     interval: 300
     storage_file: /tmp/metrics-db.json
     restore: false
+database_dsn: ""
+# pg_config:
+#     host: localhost
+#     port: 5432
+#     database: humay
+#     user: humay
+#     password: PGPASSWORD

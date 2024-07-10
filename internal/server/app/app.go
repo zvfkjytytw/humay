@@ -22,6 +22,7 @@ type Service interface {
 type ServerConfig struct {
 	HTTPConfig  *humayHTTPServer.HTTPConfig `yaml:"http_config" json:"http_config"`
 	SaverConfig *SaverConfig                `yaml:"saver_config" json:"saver_config"`
+	DatabaseDSN string                      `yaml:"database_dsn" json:"database_dsn"`
 }
 
 type ServerApp struct {
@@ -36,32 +37,38 @@ func NewApp(config *ServerConfig) (*ServerApp, error) {
 		return nil, err
 	}
 
+	// Init App
+	app := &ServerApp{
+		logger: logger,
+	}
+
 	// Init storage
-	storage := humayStorage.NewStorage(config.SaverConfig.StorageFile)
-	if config.SaverConfig.Restore {
-		err := storage.Restore(config.SaverConfig.StorageFile)
-		if err != nil {
-			logger.Sugar().Errorf("failed restore storage from file %s: %v", config.SaverConfig.StorageFile, err)
+	var storage humayHTTPServer.Storage
+
+	storage, err = humayStorage.NewPGStorage(config.DatabaseDSN)
+	if err != nil {
+		logger.Sugar().Errorf("failed init postgres storage% %v", err)
+		memStorage := humayStorage.NewStorage(config.SaverConfig.StorageFile, config.DatabaseDSN)
+		if config.SaverConfig.Restore {
+			err := memStorage.Restore(config.SaverConfig.StorageFile)
+			if err != nil {
+				logger.Sugar().Errorf("failed restore storage from file %s: %v", config.SaverConfig.StorageFile, err)
+			}
 		}
+		// Init Saver
+		if config.SaverConfig.Interval == 0 {
+			memStorage.SetAutoSave()
+		} else {
+			saver := newSaver(memStorage, config.SaverConfig.Interval, logger)
+			app.services = append(app.services, saver)
+		}
+
+		storage = memStorage
 	}
 
 	// Init HTTP server
 	httpServer := humayHTTPServer.NewHTTPServer(config.HTTPConfig, logger, storage)
-
-	app := &ServerApp{
-		logger: logger,
-		services: []Service{
-			httpServer,
-		},
-	}
-
-	// Init Saver
-	if config.SaverConfig.Interval == 0 {
-		storage.SetAutoSave()
-	} else {
-		saver := newSaver(storage, config.SaverConfig.Interval, logger)
-		app.services = append(app.services, saver)
-	}
+	app.services = append(app.services, httpServer)
 
 	return app, nil
 }
