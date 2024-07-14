@@ -28,12 +28,14 @@ type HTTPConfig struct {
 	ReadTimeout  int32  `yaml:"read_timeout"`
 	WriteTimeout int32  `yaml:"write_timeout"`
 	IdleTimeout  int32  `yaml:"idle_timeout"`
+	HashKey      string `yaml:"hash_key"`
 }
 
 type HTTPServer struct {
 	server  *http.Server
 	logger  *zap.Logger
 	storage Storage
+	hashKey string
 }
 
 func NewHTTPServer(
@@ -58,6 +60,7 @@ func NewHTTPServer(
 		server:  server,
 		logger:  logger,
 		storage: storage,
+		hashKey: config.HashKey,
 	}
 }
 

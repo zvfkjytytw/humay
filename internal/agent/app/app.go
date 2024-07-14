@@ -34,6 +34,7 @@ type AgentConfig struct {
 	ServerType     string `yaml:"server_type"`
 	PollInterval   int32  `yaml:"poll_interval"`
 	ReportInterval int32  `yaml:"report_interval"`
+	HashKey        string `yaml:"hash_key"`
 }
 
 type AgentApp struct {
@@ -61,7 +62,11 @@ func NewApp(config *AgentConfig) (*AgentApp, error) {
 	// Init server client
 	var client serverClient
 	if config.ServerType == "http" {
-		client, err = agentHTTP.NewClient(fmt.Sprintf("%s:%d", config.ServerAddress, config.ServerPort), logger)
+		client, err = agentHTTP.NewClient(
+			fmt.Sprintf("%s:%d", config.ServerAddress, config.ServerPort),
+			logger,
+			config.HashKey,
+		)
 		if err != nil {
 			return nil, err
 		}

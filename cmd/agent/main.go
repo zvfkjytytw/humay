@@ -14,15 +14,27 @@ const (
 	envAddress        = "ADDRESS"
 	envReportInterval = "REPORT_INTERVAL"
 	envPollInterval   = "POLL_INTERVAL"
+	envKey            = "KEY"
 )
 
 func main() {
-	var configFile, address string
-	var pollInterval, reportInterval int
+	var (
+		// Agent config file
+		configFile string
+		// Server address and port
+		address string
+		// Interval for polling metrics
+		pollInterval int
+		// Interval for send metrics to server
+		reportInterval int
+		// hash key for signature
+		hashKey string
+	)
 	flag.StringVar(&configFile, "c", "./build/agent.yaml", "Agent config file")
 	flag.StringVar(&address, "a", "localhost:8080", "Server address")
 	flag.IntVar(&pollInterval, "p", 2, "Interval for polling metrics")
 	flag.IntVar(&reportInterval, "r", 10, "Interval for reporting metrics")
+	flag.StringVar(&hashKey, "k", "", "Key for generate hash")
 	flag.Parse()
 
 	value, ok := os.LookupEnv(envAddress)
@@ -47,12 +59,18 @@ func main() {
 		}
 	}
 
+	value, ok = os.LookupEnv(envKey)
+	if ok {
+		hashKey = value
+	}
+
 	config := &agentApp.AgentConfig{
 		ServerAddress:  host,
 		ServerPort:     port,
 		ServerType:     "http",
 		PollInterval:   int32(pollInterval),
 		ReportInterval: int32(reportInterval),
+		HashKey:        hashKey,
 	}
 
 	app, err := agentApp.NewApp(config)
