@@ -14,12 +14,12 @@ type signingResponseWriter struct {
 	hashKey string
 }
 
-func (s *signingResponseWriter) Write(b []byte) (int, error) {
-	size, err := s.ResponseWriter.Write(b)
-	if s.hashKey != "" {
-		hash := fmt.Sprintf("%x", humayCommon.Hash256(b, s.hashKey))
-		s.ResponseWriter.Header().Set("HashSHA256", hash)
+func (w *signingResponseWriter) Write(b []byte) (int, error) {
+	if w.hashKey != "" {
+		hash := fmt.Sprintf("%x", humayCommon.Hash256(b, w.hashKey))
+		w.ResponseWriter.Header().Set("HashSHA256", hash)
 	}
+	size, err := w.ResponseWriter.Write(b)
 
 	return size, err
 }
@@ -27,7 +27,7 @@ func (s *signingResponseWriter) Write(b []byte) (int, error) {
 func Signature(hashKey string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("Hash Key: %s\n", hashKey)
+			// fmt.Printf("Hash Key: %s\n", hashKey)
 			if hashKey != "" && r.URL.Path != "/" {
 				requestBodyHash := r.Header.Get("HashSHA256")
 				if requestBodyHash == "" {
