@@ -18,7 +18,7 @@ func (h *HTTPServer) newRouter() chi.Router {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 	r.Use(hm.Logging(h.logger))
-	r.Use(hm.Signature(h.hashKey))
+	// r.Use(hm.Signature(h.hashKey))
 
 	// root handler.
 	r.Get("/", h.metricsPage)
