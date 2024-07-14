@@ -28,6 +28,7 @@ func (s *signingResponseWriter) Write(b []byte) (int, error) {
 func Signature(hashKey string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("Hash Key: %s\n", hashKey)
 			if hashKey != "" && r.URL.Path != "/" {
 				requestBodyHash := r.Header.Get("HashSHA256")
 				if requestBodyHash == "" {

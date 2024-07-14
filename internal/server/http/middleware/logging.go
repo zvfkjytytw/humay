@@ -1,9 +1,9 @@
 package humayhttpmiddleware
 
 import (
-	// "bytes"
+	"bytes"
 	"fmt"
-	// "io"
+	"io"
 	"net/http"
 	"time"
 
@@ -15,7 +15,7 @@ type (
 	responseData struct {
 		statusCode int
 		answerSize int
-		// answerBody string
+		answerBody string
 	}
 
 	loggingResponseWriter struct {
@@ -27,7 +27,7 @@ type (
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.answerSize = size
-	// r.responseData.answerBody = string(b)
+	r.responseData.answerBody = string(b)
 	return size, err
 }
 
@@ -47,15 +47,15 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 
 			method := r.Method
 			uri := r.URL.Path
-			// cType := r.Header.Get("Content-Type")
-			// aEnc := r.Header.Get("Accept-Encoding")
-			// cEnc := r.Header.Get("Content-Encoding")
+			cType := r.Header.Get("Content-Type")
+			aEnc := r.Header.Get("Accept-Encoding")
+			cEnc := r.Header.Get("Content-Encoding")
 			reqHash := r.Header.Get("HashSHA256")
 
-			// // read request body
-			// bodyBytes, _ := io.ReadAll(r.Body)
-			// requestBody := string(bodyBytes)
-			// r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+			// read request body
+			bodyBytes, _ := io.ReadAll(r.Body)
+			requestBody := string(bodyBytes)
+			r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 			lw := &loggingResponseWriter{
 				ResponseWriter: w,
@@ -85,17 +85,17 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 				fmt.Sprintf("Request %v", rID),
 				zap.String("Method", method),
 				zap.String("URI", uri),
-				// zap.String("Content-Type", cType),      // for debug
-				// zap.String("Content-Encodig", cEnc),    // for debug
-				// zap.String("Accept-Encodig", aEnc),     // for debug
-				// zap.String("RequestBody", requestBody), // for debug
+				zap.String("Content-Type", cType),          // for debug
+				zap.String("Content-Encodig", cEnc),        // for debug
+				zap.String("Accept-Encodig", aEnc),         // for debug
+				zap.String("RequestBody", requestBody),     // for debug
 				zap.String("RequestHash", reqHash),         // for debug
 				zap.String("ResponsetHash", respHash),      // for debug
 				zap.String("ResponseHashKey", respHashKey), // for debug
 				zap.String("Duration", fmt.Sprintf("%d ns", rDuration)),
 				zap.Int("Response Code", lw.responseData.statusCode),
 				zap.Int("Response Length", lw.responseData.answerSize),
-				// zap.String("Response Body", lw.responseData.answerBody), // for debug
+				zap.String("Response Body", lw.responseData.answerBody), // for debug
 			)
 		})
 	}
