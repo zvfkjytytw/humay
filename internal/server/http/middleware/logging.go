@@ -50,6 +50,7 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 			// cType := r.Header.Get("Content-Type")
 			// aEnc := r.Header.Get("Accept-Encoding")
 			// cEnc := r.Header.Get("Content-Encoding")
+			reqHash := r.Header.Get("HashSHA256")
 
 			// // read request body
 			// bodyBytes, _ := io.ReadAll(r.Body)
@@ -63,6 +64,22 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 
 			next.ServeHTTP(lw, r)
 
+			respHeaders := lw.Header()
+			var respHash, respHashKey string
+			values, ok := respHeaders["HashSHA256"]
+			if ok {
+				respHash = values[0]
+			} else {
+				respHash = "unknown"
+			}
+
+			values, ok = respHeaders["HashKey"]
+			if ok {
+				respHashKey = values[0]
+			} else {
+				respHashKey = "unknown"
+			}
+
 			rDuration := time.Since(start).Nanoseconds()
 			logger.Info(
 				fmt.Sprintf("Request %v", rID),
@@ -72,6 +89,9 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 				// zap.String("Content-Encodig", cEnc),    // for debug
 				// zap.String("Accept-Encodig", aEnc),     // for debug
 				// zap.String("RequestBody", requestBody), // for debug
+				zap.String("RequestHash", reqHash),         // for debug
+				zap.String("ResponsetHash", respHash),      // for debug
+				zap.String("ResponseHashKey", respHashKey), // for debug
 				zap.String("Duration", fmt.Sprintf("%d ns", rDuration)),
 				zap.Int("Response Code", lw.responseData.statusCode),
 				zap.Int("Response Length", lw.responseData.answerSize),

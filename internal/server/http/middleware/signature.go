@@ -19,6 +19,7 @@ func (s *signingResponseWriter) Write(b []byte) (int, error) {
 	if s.hashKey != "" {
 		hash := fmt.Sprintf("%x", humayCommon.Hash256(b, s.hashKey))
 		s.ResponseWriter.Header().Set("HashSHA256", hash)
+		s.ResponseWriter.Header().Set("HashKey", s.hashKey)
 	}
 
 	return size, err
