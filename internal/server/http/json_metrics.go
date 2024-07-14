@@ -60,6 +60,7 @@ func (h *HTTPServer) getJSONValue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("HashKey", h.hashKey)
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -138,6 +139,7 @@ func (h *HTTPServer) putJSONValue(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Storage-Type", h.storage.GetType())
+	w.Header().Set("HashKey", h.hashKey)
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -265,6 +267,7 @@ func (h *HTTPServer) putJSONValues(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("HashKey", h.hashKey)
 	w.WriteHeader(http.StatusOK)
 	w.Write(respBody)
 }

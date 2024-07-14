@@ -24,16 +24,16 @@ type (
 	}
 )
 
-func (r *loggingResponseWriter) Write(b []byte) (int, error) {
-	size, err := r.ResponseWriter.Write(b)
-	r.responseData.answerSize = size
-	r.responseData.answerBody = string(b)
+func (w *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := w.ResponseWriter.Write(b)
+	w.responseData.answerSize = size
+	w.responseData.answerBody = string(b)
 	return size, err
 }
 
-func (r *loggingResponseWriter) WriteHeader(statusCode int) {
-	r.ResponseWriter.WriteHeader(statusCode)
-	r.responseData.statusCode = statusCode
+func (w *loggingResponseWriter) WriteHeader(statusCode int) {
+	w.ResponseWriter.WriteHeader(statusCode)
+	w.responseData.statusCode = statusCode
 }
 
 func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
@@ -64,7 +64,7 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 
 			next.ServeHTTP(lw, r)
 
-			respHeaders := lw.Header()
+			respHeaders := lw.ResponseWriter.Header()
 			var respHash, respHashKey string
 			values, ok := respHeaders["HashSHA256"]
 			if ok {
