@@ -3,9 +3,19 @@ package humaymetricspoller
 import (
 	"math/rand"
 	"runtime"
+	"strconv"
+	"sync"
+
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
+)
+
+const (
+	CPUutilization = "CPUutilization"
 )
 
 type Metrics struct {
+	Mx      sync.RWMutex
 	Gauge   map[string]float64
 	Counter map[string]int64
 }
@@ -28,6 +38,9 @@ func NewPoller() (*Poller, error) {
 func (p *Poller) Update() {
 	// update memory statistics
 	p.updateMemMetrics()
+
+	p.Metrics.Mx.Lock()
+	defer p.Metrics.Mx.Unlock()
 
 	// update gauge metrics
 	p.Metrics.Gauge["Alloc"] = float64(p.memStats.Alloc)
@@ -68,5 +81,25 @@ func (p *Poller) updateMemMetrics() {
 }
 
 func (p *Poller) FlushPollCount() {
+	p.Metrics.Mx.Lock()
+	defer p.Metrics.Mx.Unlock()
 	p.Metrics.Counter["PollCount"] = 0
+}
+
+func (p *Poller) UpdateGops() {
+	p.Metrics.Mx.Lock()
+	defer p.Metrics.Mx.Unlock()
+
+	cp, err := cpu.Times(true)
+	if err == nil {
+		for i := range len(cp) {
+			p.Metrics.Gauge[CPUutilization+strconv.Itoa(i)] = float64(cp[i].System)
+		}
+	}
+
+	v, err := mem.VirtualMemory()
+	if err == nil {
+		p.Metrics.Gauge["TotalMemory"] = float64(v.Total)
+		p.Metrics.Gauge["FreeMemory"] = float64(v.Free)
+	}
 }

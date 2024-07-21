@@ -65,20 +65,12 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 			next.ServeHTTP(lw, r)
 
 			// respHeaders := lw.ResponseWriter.Header()
-			// fmt.Printf("Headers: %v", respHeaders)
-			// var respHash, respHashKey string
+			// var respHash string
 			// values, ok := respHeaders["HashSHA256"]
 			// if ok {
 			// 	respHash = values[0]
 			// } else {
 			// 	respHash = "unknown"
-			// }
-
-			// values, ok = respHeaders["HashKey"]
-			// if ok {
-			// 	respHashKey = values[0]
-			// } else {
-			// 	respHashKey = "unknown"
 			// }
 
 			rDuration := time.Since(start).Nanoseconds()
@@ -92,7 +84,6 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 				// zap.String("Request Body", requestBody),      // for debug
 				// zap.String("Request Hash", reqHash),          // for debug
 				// zap.String("Response Hash", respHash),        // for debug
-				// zap.String("Response Hash Key", respHashKey), // for debug
 				zap.String("Duration", fmt.Sprintf("%d ns", rDuration)),
 				zap.Int("Response Code", lw.responseData.statusCode),
 				zap.Int("Response Length", lw.responseData.answerSize),

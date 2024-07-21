@@ -14,6 +14,7 @@ const (
 	envAddress        = "ADDRESS"
 	envReportInterval = "REPORT_INTERVAL"
 	envPollInterval   = "POLL_INTERVAL"
+	envRateLimit      = "RATE_LIMIT"
 	envKey            = "KEY"
 )
 
@@ -27,6 +28,8 @@ func main() {
 		pollInterval int
 		// Interval for send metrics to server
 		reportInterval int
+		// Limit for open connections to server
+		rateLimit int
 		// hash key for signature
 		hashKey string
 	)
@@ -34,6 +37,7 @@ func main() {
 	flag.StringVar(&address, "a", "localhost:8080", "Server address")
 	flag.IntVar(&pollInterval, "p", 2, "Interval for polling metrics")
 	flag.IntVar(&reportInterval, "r", 10, "Interval for reporting metrics")
+	flag.IntVar(&rateLimit, "l", 5, "Rate limit")
 	flag.StringVar(&hashKey, "k", "", "Key for generate hash")
 	flag.Parse()
 
@@ -59,6 +63,14 @@ func main() {
 		}
 	}
 
+	value, ok = os.LookupEnv(envRateLimit)
+	if ok {
+		limit, err := strconv.Atoi(value)
+		if err == nil {
+			rateLimit = limit
+		}
+	}
+
 	value, ok = os.LookupEnv(envKey)
 	if ok {
 		hashKey = value
@@ -70,6 +82,7 @@ func main() {
 		ServerType:     "http",
 		PollInterval:   int32(pollInterval),
 		ReportInterval: int32(reportInterval),
+		RateLimit:      int32(rateLimit),
 		HashKey:        hashKey,
 	}
 
