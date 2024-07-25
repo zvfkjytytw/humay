@@ -100,7 +100,7 @@ func NewAppFromFile(configFile string) (*AgentApp, error) {
 }
 
 func (a *AgentApp) Run(ctx context.Context) {
-	stopChannels := make([]chan struct{}, 4)
+	stopChannel := make(chan struct{})
 	sigChanel := make(chan os.Signal, 1)
 	signal.Notify(sigChanel,
 		syscall.SIGHUP,
@@ -131,7 +131,7 @@ func (a *AgentApp) Run(ctx context.Context) {
 				a.poller.Update()
 			}
 		}
-	}(a.pollInterval, stopChannels[0])
+	}(a.pollInterval, stopChannel)
 
 	// poll gopsutils metrics.
 	go func(interval int32, stop <-chan struct{}) {
@@ -145,7 +145,7 @@ func (a *AgentApp) Run(ctx context.Context) {
 				a.poller.UpdateGops()
 			}
 		}
-	}(a.pollInterval, stopChannels[1])
+	}(a.pollInterval, stopChannel)
 
 	// send batched metrics in limit channel.
 	go func(interval int32, metricsChan chan<- []*httpModels.Metric, stop <-chan struct{}) {
@@ -159,7 +159,7 @@ func (a *AgentApp) Run(ctx context.Context) {
 				a.reportMetrics(metricsChan)
 			}
 		}
-	}(a.reportInterval, metricsChan, stopChannels[2])
+	}(a.reportInterval, metricsChan, stopChannel)
 
 	// report metrics
 	go func(metricsChan <-chan []*httpModels.Metric, stop <-chan struct{}) {
@@ -171,20 +171,16 @@ func (a *AgentApp) Run(ctx context.Context) {
 				a.client.UpdateJSONMetrics(metrics)
 			}
 		}
-	}(metricsChan, stopChannels[3])
+	}(metricsChan, stopChannel)
 
 	stopSignal := <-sigChanel
 	a.logger.Sugar().Debugf("Stop by %v", stopSignal)
-	for _, c := range stopChannels {
-		close(c)
-	}
+	close(stopChannel)
 	a.client.Stop()
 }
 
 func (a *AgentApp) reportMetrics(metricsChan chan<- []*httpModels.Metric) {
 	a.poller.Metrics.Mx.RLock()
-	defer a.poller.Metrics.Mx.RUnlock()
-	defer a.poller.FlushPollCount()
 	var metrics []*httpModels.Metric
 	for metricName, metricValue := range a.poller.Metrics.Gauge {
 		metrics = append(
@@ -197,21 +193,28 @@ func (a *AgentApp) reportMetrics(metricsChan chan<- []*httpModels.Metric) {
 		)
 	}
 	for metricName, metricValue := range a.poller.Metrics.Counter {
-		metrics = append(
-			metrics,
-			&httpModels.Metric{
-				ID:    metricName,
-				MType: "counter",
-				Delta: &metricValue,
-			},
-		)
+		if metricName != "PollCount" {
+			metrics = append(
+				metrics,
+				&httpModels.Metric{
+					ID:    metricName,
+					MType: "counter",
+					Delta: &metricValue,
+				},
+			)
+		}
 	}
+	a.poller.Metrics.Mx.RUnlock()
 
 	limitIndex := batchSize * (len(metrics) / batchSize)
 	for i := 0; i < limitIndex; i += batchSize {
 		metricsChan <- metrics[i : i+batchSize]
 	}
 	metricsChan <- metrics[limitIndex:]
+
+	if err := a.client.UpdateJSONCounter("PollCount", a.poller.Metrics.Counter["PollCount"]); err == nil {
+		a.poller.FlushPollCount()
+	}
 }
 
 func (a *AgentApp) RunOld(ctx context.Context) {
@@ -255,7 +258,7 @@ func (a *AgentApp) simpleReport() {
 	}
 	for metricName, metricValue := range a.poller.Metrics.Counter {
 		if err := a.client.UpdateJSONCounter(metricName, metricValue); err != nil {
-			a.logger.Sugar().Errorf("failed update gauge metric %s: %v", metricName, err)
+			a.logger.Sugar().Errorf("failed update counter metric %s: %v", metricName, err)
 		}
 	}
 }
@@ -264,7 +267,7 @@ func (a *AgentApp) batchReport() {
 	a.poller.Metrics.Mx.RLock()
 	defer a.poller.Metrics.Mx.RUnlock()
 	defer a.poller.FlushPollCount()
-	var metrics []*httpModels.Metric
+	metrics := make([]*httpModels.Metric, 0, len(a.poller.Metrics.Gauge)+len(a.poller.Metrics.Counter))
 	for metricName, metricValue := range a.poller.Metrics.Gauge {
 		metrics = append(
 			metrics,
