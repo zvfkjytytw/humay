@@ -15,6 +15,7 @@ import (
 	"github.com/sethvargo/go-retry"
 	"go.uber.org/zap"
 
+	humayCommon "github.com/zvfkjytytw/humay/internal/common"
 	httpModels "github.com/zvfkjytytw/humay/internal/common/http/models"
 )
 
@@ -32,9 +33,10 @@ type HTTPClient struct {
 	protocol string
 	client   http.Client
 	logger   *zap.Logger
+	hashKey  string
 }
 
-func NewClient(address string, logger *zap.Logger) (*HTTPClient, error) {
+func NewClient(address string, logger *zap.Logger, hashKey string) (*HTTPClient, error) {
 	tr := &http.Transport{
 		MaxIdleConns:    1,
 		IdleConnTimeout: 60 * time.Second,
@@ -46,6 +48,7 @@ func NewClient(address string, logger *zap.Logger) (*HTTPClient, error) {
 		protocol: HTTPProtocol,
 		client:   client,
 		logger:   logger,
+		hashKey:  hashKey,
 	}, nil
 }
 
@@ -71,7 +74,12 @@ func (h *HTTPClient) updateMetric(metricType, metricName, metricValue string) er
 		return err //nolint //wraped higher
 	}
 
-	req.Header.Add("Content-Type", "text/plain")
+	if h.hashKey != "" {
+		hash := fmt.Sprintf("%x", humayCommon.Hash256([]byte(body), h.hashKey))
+		req.Header.Set("HashSHA256", hash)
+	}
+
+	req.Header.Set("Content-Type", "text/plain")
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return err //nolint //wraped higher
@@ -145,8 +153,13 @@ func (h *HTTPClient) updateJSONMetric(metric *httpModels.Metric) error {
 				return err //nolint //wraped higher
 			}
 
-			req.Header.Add("Content-Type", "application/json")
-			req.Header.Add("Content-Encoding", "gzip")
+			if h.hashKey != "" {
+				hash := fmt.Sprintf("%x", humayCommon.Hash256(body, h.hashKey))
+				req.Header.Set("HashSHA256", hash)
+			}
+
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Content-Encoding", "gzip")
 			resp, err := h.client.Do(req)
 			if err != nil {
 				return err //nolint //wraped higher
@@ -205,6 +218,11 @@ func (h *HTTPClient) UpdateJSONMetrics(metrics []*httpModels.Metric) error {
 			)
 			if err != nil {
 				return err //nolint //wraped higher
+			}
+
+			if h.hashKey != "" {
+				hash := fmt.Sprintf("%x", humayCommon.Hash256(body, h.hashKey))
+				req.Header.Set("HashSHA256", hash)
 			}
 
 			req.Header.Add("Content-Type", "application/json")

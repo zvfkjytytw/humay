@@ -17,6 +17,7 @@ const (
 	storageIntervalEnv = "STORE_INTERVAL"
 	fileStoragePathEnv = "FILE_STORAGE_PATH"
 	databaseDSNEnv     = "DATABASE_DSN"
+	keyEnv             = "KEY"
 )
 
 func main() {
@@ -33,6 +34,8 @@ func main() {
 		restore bool
 		// dsn for connect to postgres
 		databaseDSN string
+		// hash key for signature
+		hashKey string
 	)
 
 	flag.StringVar(&configFile, "c", "./build/server.yaml", "Server config file")
@@ -41,6 +44,7 @@ func main() {
 	flag.IntVar(&storageInterval, "i", 300, "Interval between saving data")
 	flag.BoolVar(&restore, "r", true, "Restore data at the time of launch")
 	flag.StringVar(&databaseDSN, "d", "", "DSN for postgreSQL connection")
+	flag.StringVar(&hashKey, "k", "", "Key for generate hash")
 	flag.Parse()
 
 	value, ok := os.LookupEnv(addressEnv)
@@ -52,6 +56,11 @@ func main() {
 	value, ok = os.LookupEnv(databaseDSNEnv)
 	if ok {
 		databaseDSN = value
+	}
+
+	value, ok = os.LookupEnv(keyEnv)
+	if ok {
+		hashKey = value
 	}
 
 	saverConfig, err := getSaverConfig(storageInterval, fileStoragePath, restore)
@@ -66,6 +75,7 @@ func main() {
 			ReadTimeout:  5,
 			WriteTimeout: 10,
 			IdleTimeout:  20,
+			HashKey:      hashKey,
 		},
 		SaverConfig: saverConfig,
 		DatabaseDSN: databaseDSN,

@@ -2,6 +2,7 @@ package humaystorage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -110,6 +111,10 @@ func (s *MemStorage) GetAllMetrics() map[string]map[string]string {
 }
 
 func (s *MemStorage) CheckDBConnect() error {
+	if s.dsn == "" {
+		return errors.New("DSN is not set")
+	}
+
 	ctx := context.Background()
 	config, err := pgx.ParseConfig(s.dsn)
 	if err != nil {

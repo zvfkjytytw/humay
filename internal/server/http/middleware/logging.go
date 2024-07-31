@@ -24,16 +24,16 @@ type (
 	}
 )
 
-func (r *loggingResponseWriter) Write(b []byte) (int, error) {
-	size, err := r.ResponseWriter.Write(b)
-	r.responseData.answerSize = size
-	// r.responseData.answerBody = string(b)
+func (w *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := w.ResponseWriter.Write(b)
+	w.responseData.answerSize = size
+	// w.responseData.answerBody = string(b)
 	return size, err
 }
 
-func (r *loggingResponseWriter) WriteHeader(statusCode int) {
-	r.ResponseWriter.WriteHeader(statusCode)
-	r.responseData.statusCode = statusCode
+func (w *loggingResponseWriter) WriteHeader(statusCode int) {
+	w.ResponseWriter.WriteHeader(statusCode)
+	w.responseData.statusCode = statusCode
 }
 
 func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
@@ -50,6 +50,7 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 			// cType := r.Header.Get("Content-Type")
 			// aEnc := r.Header.Get("Accept-Encoding")
 			// cEnc := r.Header.Get("Content-Encoding")
+			// reqHash := r.Header.Get("HashSHA256")
 
 			// // read request body
 			// bodyBytes, _ := io.ReadAll(r.Body)
@@ -63,15 +64,26 @@ func Logging(logger *zap.Logger) func(http.Handler) http.Handler {
 
 			next.ServeHTTP(lw, r)
 
+			// respHeaders := lw.ResponseWriter.Header()
+			// var respHash string
+			// values, ok := respHeaders["HashSHA256"]
+			// if ok {
+			// 	respHash = values[0]
+			// } else {
+			// 	respHash = "unknown"
+			// }
+
 			rDuration := time.Since(start).Nanoseconds()
 			logger.Info(
 				fmt.Sprintf("Request %v", rID),
 				zap.String("Method", method),
 				zap.String("URI", uri),
-				// zap.String("Content-Type", cType),      // for debug
-				// zap.String("Content-Encodig", cEnc),    // for debug
-				// zap.String("Accept-Encodig", aEnc),     // for debug
-				// zap.String("RequestBody", requestBody), // for debug
+				// zap.String("Content-Type", cType),            // for debug
+				// zap.String("Content-Encodig", cEnc),          // for debug
+				// zap.String("Accept-Encodig", aEnc),           // for debug
+				// zap.String("Request Body", requestBody),      // for debug
+				// zap.String("Request Hash", reqHash),          // for debug
+				// zap.String("Response Hash", respHash),        // for debug
 				zap.String("Duration", fmt.Sprintf("%d ns", rDuration)),
 				zap.Int("Response Code", lw.responseData.statusCode),
 				zap.Int("Response Length", lw.responseData.answerSize),
